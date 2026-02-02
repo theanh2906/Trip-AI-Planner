@@ -1,10 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { RouteOption, TimelineItem, StopType, Language } from "../types";
 
-// Helper to get image based on keyword seed to have consistent images
-const getPlaceholderImage = (keyword: string) => {
-  const seed = keyword.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return `https://picsum.photos/seed/${seed}/400/300`;
+// Helper to get a "real" image using a search proxy based on the location/title
+// This replaces the random seed placeholder with relevant photos.
+const getLocationImage = (title: string, location: string) => {
+  // specialized query to ensure travel/scenery photos in Vietnam context
+  const query = `${title} ${location} Vietnam travel scenery`;
+  // employing a standard thumbnail proxy for demo purposes to get relevant images without a custom search API key
+  return `https://tse3.mm.bing.net/th?q=${encodeURIComponent(query)}&w=800&h=600&c=7&rs=1`;
 };
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -126,7 +129,8 @@ export const fetchItinerary = async (origin: string, destination: string, routeN
       const items = JSON.parse(response.text) as TimelineItem[];
       return items.map(item => ({
         ...item,
-        imageUrl: getPlaceholderImage(item.title)
+        // Generate a dynamic search URL for the image based on title and location
+        imageUrl: getLocationImage(item.title, item.locationName)
       }));
     }
     return [];
