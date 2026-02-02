@@ -51,12 +51,13 @@ const Map: React.FC<MapProps> = ({ items, navigationPath }) => {
       routeLayerRef.current = null;
     }
 
-    if (items.length === 0 && !navigationPath) return;
+    const validItems = items.filter(i => i.coordinates);
+    if (validItems.length === 0 && !navigationPath) return;
 
     // Add Markers
     const bounds = L.latLngBounds([]);
     
-    items.forEach((item) => {
+    validItems.forEach((item) => {
       if (item.coordinates) {
         // Create custom icon based on type
         const colorClass = getCategoryColor(item.type).replace('bg-', '');
@@ -87,57 +88,75 @@ const Map: React.FC<MapProps> = ({ items, navigationPath }) => {
       }
     });
 
-    // Draw Detailed Navigation Line if requested
+    // Determine points to draw route
+    // Priority: NavigationPath (2 points) > Full Itinerary (N points)
+    let routePoints: TimelineItem[] = [];
+    if (navigationPath && navigationPath.length >= 2) {
+      routePoints = navigationPath;
+    } else if (validItems.length >= 2) {
+      routePoints = validItems;
+    }
+
+    // Draw Detailed Line
     const fetchAndDrawRoute = async () => {
-      if (navigationPath && navigationPath.length >= 2) {
-        const start = navigationPath[0].coordinates;
-        const end = navigationPath[1].coordinates;
-        
-        if (start && end) {
-          try {
-            // Using OSRM public API for driving directions
-            const response = await fetch(
-              `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`
-            );
-            
-            const data = await response.json();
-            
-            if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-              const geometry = data.routes[0].geometry;
-              
-              // Draw the route shape
-              routeLayerRef.current = L.geoJSON(geometry, {
-                style: {
-                  color: '#3b82f6', // blue-500
-                  weight: 5,
-                  opacity: 0.8,
-                  lineCap: 'round',
-                  lineJoin: 'round'
-                }
-              }).addTo(map);
+      if (routePoints.length >= 2) {
+        // Construct OSRM coordinate string: lon,lat;lon,lat...
+        // OSRM expects {longitude},{latitude}
+        const coordsString = routePoints
+          .map(p => `${p.coordinates!.lng},${p.coordinates!.lat}`)
+          .join(';');
 
-              // Fit bounds to the route
-              const routeBounds = routeLayerRef.current.getBounds();
-              map.fitBounds(routeBounds, { padding: [50, 50] });
-            } 
-          } catch (err) {
-            console.error("Failed to fetch route geometry", err);
-             const latlngs = [
-              [start.lat, start.lng],
-              [end.lat, end.lng]
-            ] as L.LatLngExpression[];
+        try {
+          // Using OSRM public API for driving directions
+          // Note: OSRM public demo server has limits on URL length and complexity.
+          // If coordsString is too long, we might need to sample or split. 
+          // For typical itinerary (6-10 points), it should be fine.
+          const response = await fetch(
+            `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`
+          );
+          
+          const data = await response.json();
+          
+          if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+            const geometry = data.routes[0].geometry;
+            
+            // Draw the route shape
+            routeLayerRef.current = L.geoJSON(geometry, {
+              style: {
+                color: navigationPath ? '#ef4444' : '#3b82f6', // Red for navigation, Blue for itinerary
+                weight: 5,
+                opacity: 0.8,
+                lineCap: 'round',
+                lineJoin: 'round'
+              }
+            }).addTo(map);
 
-            routeLayerRef.current = (L.polyline(latlngs, {
-              color: '#2563eb',
-              weight: 4,
-              opacity: 0.5,
-              dashArray: '10, 10'
-            }) as any).addTo(map);
+            // Fit bounds to the route
+            const routeBounds = routeLayerRef.current.getBounds();
+            map.fitBounds(routeBounds, { padding: [50, 50] });
+          } 
+        } catch (err) {
+          console.error("Failed to fetch route geometry", err);
+          // Fallback: Draw polyline connecting points
+           const latlngs = routePoints.map(p => [p.coordinates!.lat, p.coordinates!.lng]) as L.LatLngExpression[];
+
+          routeLayerRef.current = (L.polyline(latlngs, {
+            color: navigationPath ? '#ef4444' : '#3b82f6',
+            weight: 4,
+            opacity: 0.5,
+            dashArray: '10, 10'
+          }) as any).addTo(map);
+          
+          // Fit bounds fallback
+          if (markersRef.current.length > 0) {
+             const group = L.featureGroup(markersRef.current);
+             map.fitBounds(group.getBounds(), { padding: [50, 50] });
           }
         }
-      } else if (items.length > 0) {
-        // Only fit bounds to markers if we aren't navigating specifically
-        map.fitBounds(bounds, { padding: [50, 50] });
+      } else if (markersRef.current.length > 0) {
+         // No route to draw but we have markers, fit to markers
+         const group = L.featureGroup(markersRef.current);
+         map.fitBounds(group.getBounds(), { padding: [50, 50] });
       }
     };
 

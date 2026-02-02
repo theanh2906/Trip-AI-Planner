@@ -71,9 +71,7 @@ const App: React.FC = () => {
       </div>
 
       {/* UI Layers - z-10 and above */}
-      {/* Note: We removed the wrapping pointer-events-none div to prevent any event capturing issues. 
-          Each component handles its own positioning and pointer events. */}
-
+      
       {!selectedRoute && (
         <SearchPanel 
           onSearch={handleSearch} 
@@ -96,7 +94,6 @@ const App: React.FC = () => {
       {/* Itinerary Timeline */}
       {selectedRoute && itinerary.length > 0 && (
         <div className="absolute inset-0 pointer-events-none z-20">
-          <div className="pointer-events-auto w-full h-full">
             <Timeline 
               items={itinerary} 
               onBack={handleBackToRoutes} 
@@ -105,13 +102,12 @@ const App: React.FC = () => {
               onToggleView={() => setIsMobileMapView(!isMobileMapView)}
               isMobileMapView={isMobileMapView}
             />
-          </div>
         </div>
       )}
 
       {/* Loading Overlay */}
       {selectedRoute && isLoadingItinerary && (
-         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm z-50">
+         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm z-50 pointer-events-auto">
             <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center mx-4">
                <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
                <h3 className="text-xl font-bold text-slate-800 mb-2">{t.buildingPlan}</h3>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { TimelineItem, Language } from '../types';
 import { CategoryIcon, getCategoryColor } from './Icons';
-import { Star, MapPin, X, Clock, Navigation, List, Map as MapIcon } from 'lucide-react';
+import { Star, MapPin, X, Clock, Navigation, List, Map as MapIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { translations } from '../utils/i18n';
 
 interface TimelineProps {
@@ -15,20 +15,24 @@ interface TimelineProps {
 
 const Timeline: React.FC<TimelineProps> = ({ items, onBack, language, onNavigate, onToggleView, isMobileMapView }) => {
   const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false); // Desktop collapse state
   const t = translations[language];
 
-  // Mobile View Logic: 
-  // If isMobileMapView is true, we hide the main list but keep the Detail Modal if open?
-  // Actually, usually on mobile we might want to just hide the list container.
+  // Mobile: Controlled by isMobileMapView (passed from parent).
+  // Desktop: Controlled by isCollapsed (local state).
   
-  const containerClass = isMobileMapView 
-    ? "hidden md:flex" 
-    : "flex";
+  // Base classes
+  // Mobile: if isMobileMapView is true -> hidden (show map). else -> flex w-full.
+  // Desktop: flex w-[480px]. transform based on isCollapsed.
+  
+  // Note: We use pointer-events-auto here because parent wrapper in App is pointer-events-none
+  const mobileClasses = isMobileMapView ? "hidden md:flex" : "flex w-full";
+  const desktopClasses = `md:w-[480px] transition-transform duration-300 ease-in-out ${isCollapsed ? 'md:-translate-x-full' : 'md:translate-x-0'}`;
 
   return (
     <>
-      {/* Mobile Toggle Button (Floating) */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 md:hidden">
+      {/* Mobile Toggle Button (Floating) - pointer-events-auto */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 md:hidden pointer-events-auto">
         <button 
           onClick={onToggleView}
           className="bg-slate-900 text-white px-6 py-3 rounded-full shadow-xl font-bold flex items-center gap-2 active:scale-95 transition-transform"
@@ -38,9 +42,20 @@ const Timeline: React.FC<TimelineProps> = ({ items, onBack, language, onNavigate
         </button>
       </div>
 
-      <div className={`absolute inset-y-0 left-0 w-full md:w-[480px] bg-white shadow-2xl z-30 flex-col animate-slide-in-left ${containerClass}`}>
+      {/* Sidebar Container - pointer-events-auto */}
+      <div className={`absolute inset-y-0 left-0 bg-white shadow-2xl z-30 flex-col pointer-events-auto ${mobileClasses} ${desktopClasses}`}>
+        
+        {/* Desktop Collapse Toggle Button */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="absolute top-1/2 -right-12 -translate-y-1/2 bg-white w-12 h-14 rounded-r-xl shadow-[4px_0_16px_rgba(0,0,0,0.1)] border-y border-r border-slate-100 hidden md:flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-slate-50 transition-colors z-40"
+          title={isCollapsed ? "Expand Itinerary" : "Collapse Itinerary"}
+        >
+           {isCollapsed ? <ChevronRight className="w-6 h-6" /> : <ChevronLeft className="w-6 h-6" />}
+        </button>
+
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-white z-10 sticky top-0">
+        <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-white z-10 sticky top-0 flex-shrink-0">
           <div>
             <h2 className="text-2xl font-bold text-slate-800">{t.itineraryTitle}</h2>
             <p className="text-slate-500 text-sm mt-1">{t.suggestedBy}</p>
@@ -177,9 +192,12 @@ const Timeline: React.FC<TimelineProps> = ({ items, onBack, language, onNavigate
                 <button 
                   onClick={() => {
                     onNavigate(selectedItem);
-                    // On mobile, automatically switch to map view
-                    onToggleView();
-                    // Close the detail modal
+                    if (window.innerWidth < 768) {
+                       onToggleView(); // Mobile: switch to map
+                    } else {
+                       // Desktop: Maybe collapse the sidebar to show the route better?
+                       // Optional: setIsCollapsed(true);
+                    }
                     setSelectedItem(null); 
                   }}
                   className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold shadow-lg shadow-slate-900/20 transition-all flex items-center justify-center gap-2"
