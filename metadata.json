@@ -1,0 +1,5 @@
+{
+  "name": "Trip AI Planner",
+  "description": "An AI-powered smart itinerary planner that visualizes routes and suggests detailed stops for road trips in Vietnam.",
+  "requestFramePermissions": []
+}
