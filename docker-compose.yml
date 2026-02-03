@@ -1,0 +1,15 @@
+services:
+  ai-planner:
+    image: theanh2906/ai-planner
+    container_name: ai-planner
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "9000:9000"
+    environment:
+      - PORT=9000
+      - ENVIRONMENT=production
+    restart: always

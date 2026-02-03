@@ -43,7 +43,7 @@ const Timeline: React.FC<TimelineProps> = ({ items, onBack, language, onNavigate
       </div>
 
       {/* Sidebar Container - pointer-events-auto */}
-      <div className={`absolute inset-y-0 left-0 bg-white shadow-2xl z-30 flex-col pointer-events-auto ${mobileClasses} ${desktopClasses}`}>
+      <div className={`absolute inset-y-0 left-0 bg-white shadow-2xl z-20 flex-col pointer-events-auto ${mobileClasses} ${desktopClasses}`}>
         
         {/* Desktop Collapse Toggle Button */}
         <button
@@ -137,17 +137,17 @@ const Timeline: React.FC<TimelineProps> = ({ items, onBack, language, onNavigate
 
         {/* Detail Modal (Pop-over inside the timeline column) */}
         {selectedItem && (
-          <div className="absolute inset-0 z-50 bg-white animate-fade-in flex flex-col">
+          <div className="absolute inset-0 z-50 bg-white animate-fade-in flex flex-col pointer-events-auto">
              <div className="relative h-64 w-full flex-shrink-0">
                 <img 
                   src={selectedItem.imageUrl} 
                   alt={selectedItem.title} 
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none"></div>
                 <button 
                   onClick={(e) => { e.stopPropagation(); setSelectedItem(null); }}
-                  className="absolute top-4 right-4 p-2 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white transition-colors"
+                  className="absolute top-4 right-4 p-2 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white transition-colors z-10 pointer-events-auto"
                 >
                   <X className="w-5 h-5" />
                 </button>

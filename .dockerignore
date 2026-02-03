@@ -1,0 +1,45 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment files (keep for build if needed)
+.env.local
+.env.*.local
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+*.md
+docs/
+
+# Claude/AI configs
+.claude/
+CLAUDE.md
+
+# Test files
+*.test.*
+*.spec.*
+__tests__/
+
+# Misc
+.DS_Store
+Thumbs.db

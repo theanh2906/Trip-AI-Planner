@@ -51,7 +51,8 @@ export const fetchRouteOptions = async (origin: string, destination: string, lan
         }
       }
     });
-
+    console.log(JSON.parse(response.text));
+    
     if (response.text) {
       return JSON.parse(response.text) as RouteOption[];
     }
