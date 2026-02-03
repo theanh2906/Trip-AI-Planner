@@ -8,8 +8,8 @@ services:
       args:
         - GEMINI_API_KEY=${GEMINI_API_KEY}
     ports:
-      - "9000:9000"
+      - "3010:3010"
     environment:
-      - PORT=9000
+      - PORT=3010
       - ENVIRONMENT=production
     restart: always
