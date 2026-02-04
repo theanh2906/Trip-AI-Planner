@@ -1,38 +1,59 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Navigation2, MapPin, Car, Bike } from 'lucide-react';
-import { translations, getLocations } from '../../../utils/i18n';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Navigation2, MapPin, Car, Bike, Loader2 } from 'lucide-react';
+import { translations } from '../../../utils/i18n';
 import { useAppStore } from '../../../stores/appStore';
 import { useTripStore } from '../../../stores/tripStore';
-import { TravelMode, TripStyle, TRIP_STYLES } from '../../../types';
+import { TravelMode, TripStyle, TRIP_STYLES, Place } from '../../../types';
 import { cn } from '../../../lib/utils';
+import { 
+  loadPopularPlaces, 
+  loadAllPlaces, 
+  searchPlaces, 
+  formatPlaceDisplay 
+} from '../../../services/placesService';
 
 // Suggestion List Component
 const SuggestionList: React.FC<{
-  query: string;
-  locations: string[];
-  onSelect: (value: string) => void;
+  suggestions: Place[];
+  onSelect: (place: Place) => void;
   visible: boolean;
-}> = ({ query, locations, onSelect, visible }) => {
-  if (!visible || !query) return null;
+  isLoading?: boolean;
+  language: 'vi' | 'en';
+}> = ({ suggestions, onSelect, visible, isLoading, language }) => {
+  if (!visible) return null;
 
-  const filtered = locations.filter(loc => 
-    loc.toLowerCase().includes(query.toLowerCase()) && loc.toLowerCase() !== query.toLowerCase()
-  );
+  if (isLoading) {
+    return (
+      <div className="absolute top-full left-0 w-full mt-1 bg-white rounded-lg shadow-xl border border-slate-100 p-4 z-50">
+        <div className="flex items-center justify-center gap-2 text-slate-500">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-sm">Đang tìm...</span>
+        </div>
+      </div>
+    );
+  }
 
-  if (filtered.length === 0) return null;
+  if (suggestions.length === 0) return null;
 
   return (
     <div className="absolute top-full left-0 w-full mt-1 bg-white rounded-lg shadow-xl border border-slate-100 max-h-48 overflow-y-auto z-50 custom-scrollbar">
-      {filtered.map((loc) => (
+      {suggestions.map((place) => (
         <div
-          key={loc}
-          onClick={() => onSelect(loc)}
+          key={place.id}
+          onClick={() => onSelect(place)}
           className="px-4 py-3 hover:bg-slate-50 cursor-pointer flex items-center gap-3 border-b border-slate-50 last:border-0 transition-colors"
         >
           <div className="p-1.5 bg-slate-100 rounded-full text-slate-400">
             <MapPin className="w-3 h-3" />
           </div>
-          <span className="text-slate-700 text-sm font-medium">{loc}</span>
+          <div className="flex-1 min-w-0">
+            <span className="text-slate-700 text-sm font-medium block truncate">
+              {place.name}
+            </span>
+            <span className="text-slate-400 text-xs">
+              {language === 'vi' ? place.country.vi : place.country.en}
+            </span>
+          </div>
         </div>
       ))}
     </div>
@@ -122,17 +143,28 @@ const SearchPanel: React.FC = () => {
   } = useTripStore();
   
   const t = translations[language];
-  const locations = getLocations(language);
 
-  const [origin, setOrigin] = useState(language === 'vi' ? 'TP. Hồ Chí Minh' : 'Ho Chi Minh City');
+  const [origin, setOrigin] = useState(language === 'vi' ? 'Hồ Chí Minh City' : 'Ho Chi Minh City');
   const [destination, setDestination] = useState(language === 'vi' ? 'Đà Lạt' : 'Da Lat');
+  const [originCountry, setOriginCountry] = useState('VN');
+  const [destinationCountry, setDestinationCountry] = useState('VN');
   const [travelMode, setTravelMode] = useState<TravelMode>(TravelMode.CAR);
   const [tripStyles, setTripStyles] = useState<TripStyle[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
   
   const [activeInput, setActiveInput] = useState<'origin' | 'destination' | null>(null);
+  const [places, setPlaces] = useState<Place[]>([]);
+  const [originSuggestions, setOriginSuggestions] = useState<Place[]>([]);
+  const [destinationSuggestions, setDestinationSuggestions] = useState<Place[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   
   const panelRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load places data on mount
+  useEffect(() => {
+    loadPopularPlaces().then(setPlaces);
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -144,6 +176,63 @@ const SearchPanel: React.FC = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Debounced search function
+  const debouncedSearch = useCallback((query: string, type: 'origin' | 'destination') => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (query.length < 2) {
+      if (type === 'origin') setOriginSuggestions([]);
+      else setDestinationSuggestions([]);
+      return;
+    }
+
+    setIsSearching(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      // First search in loaded places
+      let results = searchPlaces(query, places, { limit: 8, language });
+      
+      // If few results, try loading full dataset
+      if (results.length < 3 && places.length < 1000) {
+        const allPlaces = await loadAllPlaces();
+        setPlaces(allPlaces);
+        results = searchPlaces(query, allPlaces, { limit: 8, language });
+      }
+
+      if (type === 'origin') setOriginSuggestions(results);
+      else setDestinationSuggestions(results);
+      setIsSearching(false);
+    }, 200);
+  }, [places, language]);
+
+  // Handle origin input change
+  const handleOriginChange = (value: string) => {
+    setOrigin(value);
+    debouncedSearch(value, 'origin');
+  };
+
+  // Handle destination input change
+  const handleDestinationChange = (value: string) => {
+    setDestination(value);
+    debouncedSearch(value, 'destination');
+  };
+
+  // Handle place selection
+  const handleSelectPlace = (place: Place, type: 'origin' | 'destination') => {
+    const displayName = formatPlaceDisplay(place, language);
+    if (type === 'origin') {
+      setOrigin(place.name);
+      setOriginCountry(place.countryCode);
+      setOriginSuggestions([]);
+    } else {
+      setDestination(place.name);
+      setDestinationCountry(place.countryCode);
+      setDestinationSuggestions([]);
+    }
+    setActiveInput(null);
+  };
 
   const handleToggleStyle = (style: TripStyle) => {
     setTripStyles(prev => 
@@ -200,17 +289,18 @@ const SearchPanel: React.FC = () => {
             <input
               type="text"
               value={origin}
-              onChange={(e) => setOrigin(e.target.value)}
+              onChange={(e) => handleOriginChange(e.target.value)}
               onFocus={() => setActiveInput('origin')}
               placeholder={t.originPlaceholder}
               autoComplete="off"
               className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium text-slate-700 placeholder:text-slate-400"
             />
             <SuggestionList 
-              query={origin} 
-              locations={locations} 
-              visible={activeInput === 'origin'} 
-              onSelect={(val) => { setOrigin(val); setActiveInput(null); }} 
+              suggestions={originSuggestions} 
+              visible={activeInput === 'origin' && origin.length >= 2} 
+              onSelect={(place) => handleSelectPlace(place, 'origin')}
+              isLoading={isSearching && activeInput === 'origin'}
+              language={language}
             />
           </div>
 
@@ -225,17 +315,18 @@ const SearchPanel: React.FC = () => {
             <input
               type="text"
               value={destination}
-              onChange={(e) => setDestination(e.target.value)}
+              onChange={(e) => handleDestinationChange(e.target.value)}
               onFocus={() => setActiveInput('destination')}
               placeholder={t.destinationPlaceholder}
               autoComplete="off"
               className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all text-sm font-medium text-slate-700 placeholder:text-slate-400"
             />
             <SuggestionList 
-              query={destination} 
-              locations={locations} 
-              visible={activeInput === 'destination'} 
-              onSelect={(val) => { setDestination(val); setActiveInput(null); }} 
+              suggestions={destinationSuggestions} 
+              visible={activeInput === 'destination' && destination.length >= 2} 
+              onSelect={(place) => handleSelectPlace(place, 'destination')}
+              isLoading={isSearching && activeInput === 'destination'}
+              language={language}
             />
           </div>
 

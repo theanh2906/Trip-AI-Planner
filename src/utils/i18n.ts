@@ -12,8 +12,8 @@ export const translations = {
     navSettings: 'Cài đặt',
     navMore: 'Thêm',
     searchTitle: 'Tìm kiếm hành trình',
-    originPlaceholder: 'Điểm khởi hành (vd: TP.HCM)',
-    destinationPlaceholder: 'Điểm đến (vd: Đà Lạt)',
+    originPlaceholder: 'Điểm khởi hành (vd: Tokyo, Bangkok)',
+    destinationPlaceholder: 'Điểm đến (vd: Sydney, Singapore)',
     searchButton: 'Tìm kiếm hành trình',
     analyzing: 'Đang phân tích...',
     buildingPlan: 'Đang lên kế hoạch...',
@@ -28,9 +28,11 @@ export const translations = {
     location: 'Địa điểm',
     navigate: 'Dẫn đường đến đây',
     exploreTitle: 'KHÁM PHÁ',
-    exploreSubtitle: 'VIỆT NAM',
+    exploreSubtitle: 'CHÂU Á - THÁI BÌNH DƯƠNG',
     comingSoon: 'Sắp ra mắt',
     featureInDevelopment: 'Tính năng đang được phát triển',
+    searching: 'Đang tìm...',
+    noResults: 'Không tìm thấy kết quả',
   },
   en: {
     appTitle: 'TripAI',
@@ -43,8 +45,8 @@ export const translations = {
     navSettings: 'Settings',
     navMore: 'More',
     searchTitle: 'Find your journey',
-    originPlaceholder: 'Origin (e.g. Ho Chi Minh City)',
-    destinationPlaceholder: 'Destination (e.g. Da Lat)',
+    originPlaceholder: 'Origin (e.g. Tokyo, Bangkok)',
+    destinationPlaceholder: 'Destination (e.g. Sydney, Singapore)',
     searchButton: 'Find Routes',
     analyzing: 'Analyzing...',
     buildingPlan: 'Building your plan...',
@@ -59,22 +61,10 @@ export const translations = {
     location: 'Location',
     navigate: 'Navigate here',
     exploreTitle: 'EXPLORE',
-    exploreSubtitle: 'VIETNAM',
+    exploreSubtitle: 'ASIA-PACIFIC',
     comingSoon: 'Coming Soon',
     featureInDevelopment: 'Feature in development',
+    searching: 'Searching...',
+    noResults: 'No results found',
   }
 };
-
-export const POPULAR_LOCATIONS_VI = [
-  "TP. Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Đà Lạt", "Nha Trang", 
-  "Vũng Tàu", "Phan Thiết", "Hội An", "Huế", "Sapa", 
-  "Hạ Long", "Cần Thơ", "Phú Quốc", "Quy Nhơn", "Buôn Ma Thuột"
-];
-
-export const POPULAR_LOCATIONS_EN = [
-  "Ho Chi Minh City", "Hanoi", "Da Nang", "Da Lat", "Nha Trang", 
-  "Vung Tau", "Phan Thiet", "Hoi An", "Hue", "Sapa", 
-  "Ha Long Bay", "Can Tho", "Phu Quoc", "Quy Nhon", "Buon Ma Thuot"
-];
-
-export const getLocations = (lang: Language) => lang === 'vi' ? POPULAR_LOCATIONS_VI : POPULAR_LOCATIONS_EN;

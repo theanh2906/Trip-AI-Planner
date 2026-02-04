@@ -1,5 +1,20 @@
 export type Language = 'vi' | 'en';
 
+// Place/Location types for autocomplete
+export interface Place {
+  id: number;
+  name: string;
+  asciiName: string;
+  countryCode: string;
+  country: {
+    en: string;
+    vi: string;
+  };
+  lat: number;
+  lng: number;
+  population: number;
+}
+
 export interface Coordinates {
   lat: number;
   lng: number;
