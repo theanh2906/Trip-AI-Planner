@@ -11,7 +11,7 @@ ENV GEMINI_API_KEY=${GEMINI_API_KEY}
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
 # Copy source code
 COPY . .
