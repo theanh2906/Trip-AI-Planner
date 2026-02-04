@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Navigation2, MapPin, Car, Bike, Loader2 } from 'lucide-react';
+import { Navigation2, MapPin, Car, Bike, Plane, Loader2, LocateFixed } from 'lucide-react';
 import { translations } from '../../../utils/i18n';
 import { useAppStore } from '../../../stores/appStore';
 import { useTripStore } from '../../../stores/tripStore';
 import { TravelMode, TripStyle, TRIP_STYLES, Place } from '../../../types';
 import { cn } from '../../../lib/utils';
-import { 
-  loadPopularPlaces, 
-  loadAllPlaces, 
-  searchPlaces, 
-  formatPlaceDisplay 
+import {
+  loadPopularPlaces,
+  loadAllPlaces,
+  searchPlaces,
+  formatPlaceDisplay,
 } from '../../../services/placesService';
+import { getCurrentLocation, GeolocationError } from '../../../services/geolocationService';
 
 // Suggestion List Component
 const SuggestionList: React.FC<{
@@ -47,9 +48,7 @@ const SuggestionList: React.FC<{
             <MapPin className="w-3 h-3" />
           </div>
           <div className="flex-1 min-w-0">
-            <span className="text-slate-700 text-sm font-medium block truncate">
-              {place.name}
-            </span>
+            <span className="text-slate-700 text-sm font-medium block truncate">{place.name}</span>
             <span className="text-slate-400 text-xs">
               {language === 'vi' ? place.country.vi : place.country.en}
             </span>
@@ -64,7 +63,14 @@ const SuggestionList: React.FC<{
 const TravelModeSelector: React.FC<{
   value: TravelMode;
   onChange: (mode: TravelMode) => void;
-}> = ({ value, onChange }) => {
+  language: 'vi' | 'en';
+}> = ({ value, onChange, language }) => {
+  const labels = {
+    car: language === 'vi' ? 'Ô tô' : 'Car',
+    motorbike: language === 'vi' ? 'Xe máy' : 'Motorbike',
+    plane: language === 'vi' ? 'Máy bay' : 'Plane',
+  };
+
   return (
     <div className="flex gap-2">
       <button
@@ -78,7 +84,7 @@ const TravelModeSelector: React.FC<{
         )}
       >
         <Car className="w-4 h-4" />
-        <span className="text-sm font-medium">Ô tô</span>
+        <span className="text-sm font-medium">{labels.car}</span>
       </button>
       <button
         type="button"
@@ -91,7 +97,20 @@ const TravelModeSelector: React.FC<{
         )}
       >
         <Bike className="w-4 h-4" />
-        <span className="text-sm font-medium">Xe máy</span>
+        <span className="text-sm font-medium">{labels.motorbike}</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange(TravelMode.PLANE)}
+        className={cn(
+          'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border transition-all',
+          value === TravelMode.PLANE
+            ? 'bg-blue-50 border-blue-200 text-blue-700'
+            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+        )}
+      >
+        <Plane className="w-4 h-4" />
+        <span className="text-sm font-medium">{labels.plane}</span>
       </button>
     </div>
   );
@@ -108,7 +127,7 @@ const TripStyleChips: React.FC<{
       {TRIP_STYLES.map((style) => {
         const isSelected = selectedStyles.includes(style.id);
         const label = language === 'vi' ? style.labelVi : style.labelEn;
-        
+
         return (
           <button
             key={style.id}
@@ -133,15 +152,9 @@ const TripStyleChips: React.FC<{
 // Main SearchPanel Component
 const SearchPanel: React.FC = () => {
   const { language } = useAppStore();
-  const { 
-    searchParams, 
-    setSearchParams, 
-    search, 
-    isLoadingRoutes,
-    routes,
-    selectedRoute 
-  } = useTripStore();
-  
+  const { searchParams, setSearchParams, search, isLoadingRoutes, routes, selectedRoute } =
+    useTripStore();
+
   const t = translations[language];
 
   const [origin, setOrigin] = useState(language === 'vi' ? 'Hồ Chí Minh City' : 'Ho Chi Minh City');
@@ -151,13 +164,15 @@ const SearchPanel: React.FC = () => {
   const [travelMode, setTravelMode] = useState<TravelMode>(TravelMode.CAR);
   const [tripStyles, setTripStyles] = useState<TripStyle[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   const [activeInput, setActiveInput] = useState<'origin' | 'destination' | null>(null);
   const [places, setPlaces] = useState<Place[]>([]);
   const [originSuggestions, setOriginSuggestions] = useState<Place[]>([]);
   const [destinationSuggestions, setDestinationSuggestions] = useState<Place[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
   const panelRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -173,39 +188,42 @@ const SearchPanel: React.FC = () => {
         setActiveInput(null);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Debounced search function
-  const debouncedSearch = useCallback((query: string, type: 'origin' | 'destination') => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    if (query.length < 2) {
-      if (type === 'origin') setOriginSuggestions([]);
-      else setDestinationSuggestions([]);
-      return;
-    }
-
-    setIsSearching(true);
-    searchTimeoutRef.current = setTimeout(async () => {
-      // First search in loaded places
-      let results = searchPlaces(query, places, { limit: 8, language });
-      
-      // If few results, try loading full dataset
-      if (results.length < 3 && places.length < 1000) {
-        const allPlaces = await loadAllPlaces();
-        setPlaces(allPlaces);
-        results = searchPlaces(query, allPlaces, { limit: 8, language });
+  const debouncedSearch = useCallback(
+    (query: string, type: 'origin' | 'destination') => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
       }
 
-      if (type === 'origin') setOriginSuggestions(results);
-      else setDestinationSuggestions(results);
-      setIsSearching(false);
-    }, 200);
-  }, [places, language]);
+      if (query.length < 2) {
+        if (type === 'origin') setOriginSuggestions([]);
+        else setDestinationSuggestions([]);
+        return;
+      }
+
+      setIsSearching(true);
+      searchTimeoutRef.current = setTimeout(async () => {
+        // First search in loaded places
+        let results = searchPlaces(query, places, { limit: 8, language });
+
+        // If few results, try loading full dataset
+        if (results.length < 3 && places.length < 1000) {
+          const allPlaces = await loadAllPlaces();
+          setPlaces(allPlaces);
+          results = searchPlaces(query, allPlaces, { limit: 8, language });
+        }
+
+        if (type === 'origin') setOriginSuggestions(results);
+        else setDestinationSuggestions(results);
+        setIsSearching(false);
+      }, 200);
+    },
+    [places, language]
+  );
 
   // Handle origin input change
   const handleOriginChange = (value: string) => {
@@ -234,18 +252,56 @@ const SearchPanel: React.FC = () => {
     setActiveInput(null);
   };
 
+  // Handle current location
+  const handleUseCurrentLocation = async () => {
+    setIsGettingLocation(true);
+    setLocationError(null);
+    setActiveInput(null);
+
+    try {
+      const location = await getCurrentLocation();
+      setOrigin(location.displayName);
+      setOriginCountry(location.countryCode || 'VN');
+      setOriginSuggestions([]);
+    } catch (error) {
+      const geoError = error as GeolocationError;
+      let errorMessage: string;
+
+      switch (geoError.code) {
+        case 'PERMISSION_DENIED':
+          errorMessage = t.locationPermissionDenied;
+          break;
+        case 'POSITION_UNAVAILABLE':
+          errorMessage = t.locationUnavailable;
+          break;
+        case 'TIMEOUT':
+          errorMessage = t.locationTimeout;
+          break;
+        case 'NOT_SUPPORTED':
+          errorMessage = t.locationNotSupported;
+          break;
+        default:
+          errorMessage = t.locationError;
+      }
+
+      setLocationError(errorMessage);
+      // Clear error after 3 seconds
+      setTimeout(() => setLocationError(null), 3000);
+    } finally {
+      setIsGettingLocation(false);
+    }
+  };
+
   const handleToggleStyle = (style: TripStyle) => {
-    setTripStyles(prev => 
-      prev.includes(style) 
-        ? prev.filter(s => s !== style)
-        : [...prev, style]
+    setTripStyles((prev) =>
+      prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style]
     );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!origin.trim() || !destination.trim()) return;
-    
+
     setActiveInput(null);
     setSearchParams({
       origin,
@@ -253,7 +309,7 @@ const SearchPanel: React.FC = () => {
       travelMode,
       tripStyles,
     });
-    
+
     // Small delay to ensure state is updated
     setTimeout(() => {
       search();
@@ -264,8 +320,8 @@ const SearchPanel: React.FC = () => {
   if (routes.length > 0 || selectedRoute) return null;
 
   return (
-    <div 
-      ref={panelRef} 
+    <div
+      ref={panelRef}
       className="absolute top-16 left-0 md:top-4 md:left-20 z-20 w-full md:max-w-md p-4 md:p-0 pointer-events-none"
     >
       <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-white/20 pointer-events-auto overflow-hidden">
@@ -293,15 +349,40 @@ const SearchPanel: React.FC = () => {
               onFocus={() => setActiveInput('origin')}
               placeholder={t.originPlaceholder}
               autoComplete="off"
-              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium text-slate-700 placeholder:text-slate-400"
+              className="w-full pl-9 pr-12 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium text-slate-700 placeholder:text-slate-400"
             />
-            <SuggestionList 
-              suggestions={originSuggestions} 
-              visible={activeInput === 'origin' && origin.length >= 2} 
+            {/* Current Location Button */}
+            <button
+              type="button"
+              onClick={handleUseCurrentLocation}
+              disabled={isGettingLocation}
+              title={t.useCurrentLocation}
+              className={cn(
+                'absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all z-10',
+                isGettingLocation
+                  ? 'text-blue-500 cursor-wait'
+                  : 'text-slate-400 hover:text-blue-500 hover:bg-blue-50'
+              )}
+            >
+              {isGettingLocation ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <LocateFixed className="w-4 h-4" />
+              )}
+            </button>
+            <SuggestionList
+              suggestions={originSuggestions}
+              visible={activeInput === 'origin' && origin.length >= 2}
               onSelect={(place) => handleSelectPlace(place, 'origin')}
               isLoading={isSearching && activeInput === 'origin'}
               language={language}
             />
+            {/* Location Error Message */}
+            {locationError && (
+              <div className="absolute top-full left-0 w-full mt-1 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 z-50">
+                {locationError}
+              </div>
+            )}
           </div>
 
           {/* Connector Line */}
@@ -321,9 +402,9 @@ const SearchPanel: React.FC = () => {
               autoComplete="off"
               className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all text-sm font-medium text-slate-700 placeholder:text-slate-400"
             />
-            <SuggestionList 
-              suggestions={destinationSuggestions} 
-              visible={activeInput === 'destination' && destination.length >= 2} 
+            <SuggestionList
+              suggestions={destinationSuggestions}
+              visible={activeInput === 'destination' && destination.length >= 2}
               onSelect={(place) => handleSelectPlace(place, 'destination')}
               isLoading={isSearching && activeInput === 'destination'}
               language={language}
@@ -339,7 +420,7 @@ const SearchPanel: React.FC = () => {
             >
               {isExpanded ? '− Ẩn tùy chọn' : '+ Tùy chọn nâng cao'}
             </button>
-            
+
             {isExpanded && (
               <div className="mt-3 space-y-4 animate-fade-in">
                 {/* Travel Mode */}
@@ -347,9 +428,10 @@ const SearchPanel: React.FC = () => {
                   <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
                     Phương tiện
                   </label>
-                  <TravelModeSelector 
-                    value={travelMode} 
-                    onChange={setTravelMode} 
+                  <TravelModeSelector
+                    value={travelMode}
+                    onChange={setTravelMode}
+                    language={language}
                   />
                 </div>
 
@@ -358,7 +440,7 @@ const SearchPanel: React.FC = () => {
                   <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
                     Phong cách chuyến đi
                   </label>
-                  <TripStyleChips 
+                  <TripStyleChips
                     selectedStyles={tripStyles}
                     onToggle={handleToggleStyle}
                     language={language}
@@ -371,7 +453,7 @@ const SearchPanel: React.FC = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isLoadingRoutes}
+            disabled={isLoadingRoutes || !origin.trim() || !destination.trim()}
             className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-semibold shadow-lg shadow-blue-500/30 transition-all transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2 text-sm"
           >
             {isLoadingRoutes ? (

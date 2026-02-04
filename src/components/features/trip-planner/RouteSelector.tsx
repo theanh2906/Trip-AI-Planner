@@ -4,10 +4,15 @@ import { Clock, Navigation, Info, ArrowLeft } from 'lucide-react';
 import { translations } from '../../../utils/i18n';
 import { useAppStore } from '../../../stores/appStore';
 import { useTripStore } from '../../../stores/tripStore';
+import { RouteOption } from '../../../types';
 import { cn } from '../../../lib/utils';
+import TripDetailsModal from './TripDetailsModal';
 
 // Tooltip Component with Portal
-const Tooltip: React.FC<{ content: string; children: React.ReactNode }> = ({ content, children }) => {
+const Tooltip: React.FC<{ content: string; children: React.ReactNode }> = ({
+  content,
+  children,
+}) => {
   const [show, setShow] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -16,13 +21,13 @@ const Tooltip: React.FC<{ content: string; children: React.ReactNode }> = ({ con
     if (show && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const tooltipWidth = 280;
-      
+
       // Position to the right of the icon, or left if no space
       let left = rect.right + 8;
       if (left + tooltipWidth > window.innerWidth - 16) {
         left = rect.left - tooltipWidth - 8;
       }
-      
+
       setPosition({
         top: rect.top + rect.height / 2,
         left: Math.max(16, left),
@@ -37,32 +42,51 @@ const Tooltip: React.FC<{ content: string; children: React.ReactNode }> = ({ con
         className="inline-flex"
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
-        onClick={(e) => { e.stopPropagation(); setShow(!show); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          setShow(!show);
+        }}
       >
         {children}
       </div>
-      {show && createPortal(
-        <div 
-          className="fixed z-[9999] w-70 max-w-[280px] p-3 bg-slate-900 text-white text-sm rounded-xl shadow-2xl animate-fade-in"
-          style={{
-            top: position.top,
-            left: position.left,
-            transform: 'translateY(-50%)',
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <p className="leading-relaxed">{content}</p>
-        </div>,
-        document.body
-      )}
+      {show &&
+        createPortal(
+          <div
+            className="fixed z-[9999] w-70 max-w-[280px] p-3 bg-slate-900 text-white text-sm rounded-xl shadow-2xl animate-fade-in"
+            style={{
+              top: position.top,
+              left: position.left,
+              transform: 'translateY(-50%)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="leading-relaxed">{content}</p>
+          </div>,
+          document.body
+        )}
     </>
   );
 };
 
 const RouteSelector: React.FC = () => {
   const { language } = useAppStore();
-  const { routes, selectRoute, isLoadingItinerary, selectedRoute, backToSearch, searchParams } = useTripStore();
+  const {
+    routes,
+    isLoadingItinerary,
+    selectedRoute,
+    backToSearch,
+    searchParams,
+    openTripDetailsModal,
+  } = useTripStore();
   const t = translations[language];
+
+  const [pendingRoute, setPendingRoute] = useState<RouteOption | null>(null);
+
+  const handleRouteClick = (route: RouteOption) => {
+    if (isLoadingItinerary) return;
+    setPendingRoute(route);
+    openTripDetailsModal();
+  };
 
   if (routes.length === 0 || selectedRoute) return null;
 
@@ -91,13 +115,13 @@ const RouteSelector: React.FC = () => {
             </span>
           </div>
         </div>
-      
+
         {/* Route cards list */}
         <div className="p-4 space-y-3 max-h-[50vh] md:max-h-[60vh] overflow-y-auto custom-scrollbar">
           {routes.map((route, index) => (
             <div
               key={route.id}
-              onClick={() => !isLoadingItinerary && selectRoute(route)}
+              onClick={() => handleRouteClick(route)}
               className={cn(
                 'bg-slate-50 hover:bg-white rounded-xl p-4 border border-slate-100 transition-all cursor-pointer',
                 'hover:shadow-lg hover:-translate-y-0.5',
@@ -106,11 +130,15 @@ const RouteSelector: React.FC = () => {
               )}
             >
               {/* Rank indicator */}
-              <div className={cn(
-                'absolute top-0 left-0 w-1 h-full rounded-l-xl',
-                index === 0 ? 'bg-gradient-to-b from-amber-400 to-orange-500' : 'bg-blue-400 group-hover:bg-indigo-500'
-              )} />
-              
+              <div
+                className={cn(
+                  'absolute top-0 left-0 w-1 h-full rounded-l-xl',
+                  index === 0
+                    ? 'bg-gradient-to-b from-amber-400 to-orange-500'
+                    : 'bg-blue-400 group-hover:bg-indigo-500'
+                )}
+              />
+
               {/* Recommended badge */}
               {index === 0 && (
                 <div className="absolute top-2 right-2">
@@ -119,14 +147,14 @@ const RouteSelector: React.FC = () => {
                   </span>
                 </div>
               )}
-              
+
               {/* Route Name + Info Tooltip */}
               <div className="flex items-center gap-2 mb-2 pl-2 pr-16">
                 <h4 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
                   {route.name}
                 </h4>
                 <Tooltip content={route.description}>
-                  <button 
+                  <button
                     type="button"
                     className="p-1 hover:bg-blue-100 rounded-full transition-colors flex-shrink-0"
                   >
@@ -134,7 +162,7 @@ const RouteSelector: React.FC = () => {
                   </button>
                 </Tooltip>
               </div>
-              
+
               {/* Duration & Distance */}
               <div className="flex items-center gap-4 pl-2">
                 <div className="flex items-center gap-1.5 text-blue-600 font-semibold text-sm">
@@ -150,7 +178,7 @@ const RouteSelector: React.FC = () => {
               {/* Highlights */}
               <div className="mt-2 pl-2 flex flex-wrap gap-1.5">
                 {route.highlights.slice(0, 3).map((highlight, i) => (
-                  <span 
+                  <span
                     key={i}
                     className="text-xs bg-white text-slate-600 px-2 py-0.5 rounded-full border border-slate-200"
                   >
@@ -158,9 +186,7 @@ const RouteSelector: React.FC = () => {
                   </span>
                 ))}
                 {route.highlights.length > 3 && (
-                  <span className="text-xs text-slate-400">
-                    +{route.highlights.length - 3}
-                  </span>
+                  <span className="text-xs text-slate-400">+{route.highlights.length - 3}</span>
                 )}
               </div>
 
@@ -173,6 +199,9 @@ const RouteSelector: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Trip Details Modal */}
+      <TripDetailsModal route={pendingRoute} />
     </div>
   );
 };

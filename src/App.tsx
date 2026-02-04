@@ -24,15 +24,20 @@ const ComingSoon: React.FC<{ feature: string }> = ({ feature }) => {
 
 const TripPlannerFeature: React.FC = () => {
   const { language } = useAppStore();
-  const { itinerary, navigationPath, routes, selectedRoute, isLoadingRoutes, isLoadingItinerary } = useTripStore();
+  const { itinerary, navigationPath, routes, selectedRoute, isLoadingRoutes, isLoadingItinerary } =
+    useTripStore();
   const t = translations[language];
 
   return (
     <>
-      <div className="absolute inset-0 z-0"><Map items={itinerary} navigationPath={navigationPath} /></div>
+      <div className="absolute inset-0 z-0">
+        <Map items={itinerary} navigationPath={navigationPath} />
+      </div>
       <SearchPanel />
       <RouteSelector />
-      <div className="absolute inset-0 pointer-events-none z-20"><Timeline /></div>
+      <div className="absolute inset-0 pointer-events-none z-20">
+        <Timeline />
+      </div>
       {selectedRoute && isLoadingItinerary && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm z-50 pointer-events-auto">
           <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center mx-4">
@@ -45,7 +50,9 @@ const TripPlannerFeature: React.FC = () => {
       {!isLoadingRoutes && routes.length === 0 && !selectedRoute && (
         <div className="absolute bottom-24 md:bottom-10 right-4 md:right-10 text-right opacity-50 hidden md:block z-0 pointer-events-none">
           <h1 className="text-6xl font-black text-slate-300 tracking-tighter">{t.exploreTitle}</h1>
-          <h1 className="text-6xl font-black text-slate-300 tracking-tighter">{t.exploreSubtitle}</h1>
+          <h1 className="text-6xl font-black text-slate-300 tracking-tighter">
+            {t.exploreSubtitle}
+          </h1>
         </div>
       )}
     </>
@@ -60,18 +67,28 @@ const App: React.FC = () => {
     const handleOffline = () => setOnline(false);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); };
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, [setOnline]);
 
   const renderFeature = () => {
     switch (activeFeature) {
-      case 'trip-planner': return <TripPlannerFeature />;
-      case 'budget': return <ComingSoon feature="Budget Calculator" />;
-      case 'weather': return <ComingSoon feature="Weather" />;
-      case 'ai-assistant': return <ComingSoon feature="AI Assistant" />;
-      case 'saved-trips': return <ComingSoon feature="Saved Trips" />;
-      case 'settings': return <ComingSoon feature="Settings" />;
-      default: return <TripPlannerFeature />;
+      case 'trip-planner':
+        return <TripPlannerFeature />;
+      case 'budget':
+        return <ComingSoon feature="Budget Calculator" />;
+      case 'weather':
+        return <ComingSoon feature="Weather" />;
+      case 'ai-assistant':
+        return <ComingSoon feature="AI Assistant" />;
+      case 'saved-trips':
+        return <ComingSoon feature="Saved Trips" />;
+      case 'settings':
+        return <ComingSoon feature="Settings" />;
+      default:
+        return <TripPlannerFeature />;
     }
   };
 

@@ -8,7 +8,7 @@ interface IconProps {
 }
 
 export const CategoryIcon: React.FC<IconProps> = ({ type, className }) => {
-  const commonClass = className || "w-5 h-5 text-white";
+  const commonClass = className || 'w-5 h-5 text-white';
 
   switch (type) {
     case StopType.FOOD:

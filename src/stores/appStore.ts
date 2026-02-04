@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { Language } from '../types';
 
-export type FeatureType = 
-  | 'trip-planner' 
-  | 'budget' 
-  | 'weather' 
-  | 'ai-assistant' 
+export type FeatureType =
+  | 'trip-planner'
+  | 'budget'
+  | 'weather'
+  | 'ai-assistant'
   | 'saved-trips'
   | 'settings';
 
@@ -14,7 +14,7 @@ interface AppState {
   isSidebarOpen: boolean;
   language: Language;
   isOnline: boolean;
-  
+
   setActiveFeature: (feature: FeatureType) => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
@@ -27,7 +27,7 @@ export const useAppStore = create<AppState>((set) => ({
   isSidebarOpen: false,
   language: 'vi',
   isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
-  
+
   setActiveFeature: (feature) => set({ activeFeature: feature }),
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
   setSidebarOpen: (open) => set({ isSidebarOpen: open }),

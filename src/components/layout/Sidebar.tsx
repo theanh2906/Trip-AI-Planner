@@ -1,6 +1,16 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Navigation2, Map, Wallet, CloudSun, Sparkles, Bookmark, Settings, Globe } from 'lucide-react';
+import {
+  X,
+  Navigation2,
+  Map,
+  Wallet,
+  CloudSun,
+  Sparkles,
+  Bookmark,
+  Settings,
+  Globe,
+} from 'lucide-react';
 import { useAppStore, FeatureType } from '../../stores/appStore';
 import { translations } from '../../utils/i18n';
 import { cn } from '../../lib/utils';
@@ -21,11 +31,14 @@ const navItems: NavItem[] = [
 ];
 
 const Sidebar: React.FC = () => {
-  const { isSidebarOpen, setSidebarOpen, activeFeature, setActiveFeature, language, setLanguage } = useAppStore();
+  const { isSidebarOpen, setSidebarOpen, activeFeature, setActiveFeature, language, setLanguage } =
+    useAppStore();
   const t = translations[language];
 
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setSidebarOpen(false); };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSidebarOpen(false);
+    };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, [setSidebarOpen]);
@@ -65,7 +78,10 @@ const Sidebar: React.FC = () => {
                   <p className="text-xs text-slate-500">{t.appTagline}</p>
                 </div>
               </div>
-              <button onClick={() => setSidebarOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg">
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg"
+              >
                 <X className="w-5 h-5 text-slate-500" />
               </button>
             </div>
@@ -81,13 +97,19 @@ const Sidebar: React.FC = () => {
                         disabled={item.disabled}
                         className={cn(
                           'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left font-medium',
-                          isActive ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50',
+                          isActive
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'text-slate-600 hover:bg-slate-50',
                           item.disabled && 'opacity-50 cursor-not-allowed'
                         )}
                       >
                         <Icon className={cn('w-5 h-5', isActive && 'text-blue-500')} />
                         <span>{t[item.labelKey] as string}</span>
-                        {item.disabled && <span className="ml-auto text-[10px] bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full">Soon</span>}
+                        {item.disabled && (
+                          <span className="ml-auto text-[10px] bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full">
+                            Soon
+                          </span>
+                        )}
                       </button>
                     </li>
                   );
@@ -95,7 +117,10 @@ const Sidebar: React.FC = () => {
               </ul>
               <div className="my-4 border-t border-slate-100" />
               <button
-                onClick={() => { setActiveFeature('settings'); setSidebarOpen(false); }}
+                onClick={() => {
+                  setActiveFeature('settings');
+                  setSidebarOpen(false);
+                }}
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium text-slate-600 hover:bg-slate-50',
                   activeFeature === 'settings' && 'bg-blue-50 text-blue-600'

@@ -18,8 +18,9 @@ const SuggestionList: React.FC<{
 }> = ({ query, locations, onSelect, visible }) => {
   if (!visible || !query) return null;
 
-  const filtered = locations.filter(loc => 
-    loc.toLowerCase().includes(query.toLowerCase()) && loc.toLowerCase() !== query.toLowerCase()
+  const filtered = locations.filter(
+    (loc) =>
+      loc.toLowerCase().includes(query.toLowerCase()) && loc.toLowerCase() !== query.toLowerCase()
   );
 
   if (filtered.length === 0) return null;
@@ -42,15 +43,20 @@ const SuggestionList: React.FC<{
   );
 };
 
-const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading, language, onLanguageChange }) => {
+const SearchPanel: React.FC<SearchPanelProps> = ({
+  onSearch,
+  isLoading,
+  language,
+  onLanguageChange,
+}) => {
   const t = translations[language];
   const locations = getLocations(language);
 
   const [from, setFrom] = useState(language === 'vi' ? 'TP. Hồ Chí Minh' : 'Ho Chi Minh City');
   const [to, setTo] = useState(language === 'vi' ? 'Đà Lạt' : 'Da Lat');
-  
+
   const [activeInput, setActiveInput] = useState<'from' | 'to' | null>(null);
-  
+
   const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -58,8 +64,8 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading, language
         setActiveInput(null);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -75,9 +81,11 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading, language
   };
 
   return (
-    <div ref={panelRef} className="absolute top-0 left-0 md:top-4 md:left-4 z-20 w-full md:max-w-md p-4 md:p-0 pointer-events-none">
+    <div
+      ref={panelRef}
+      className="absolute top-0 left-0 md:top-4 md:left-4 z-20 w-full md:max-w-md p-4 md:p-0 pointer-events-none"
+    >
       <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-2xl p-5 border border-white/20 pointer-events-auto">
-        
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -86,8 +94,8 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading, language
             </div>
             <h1 className="text-lg font-bold text-slate-800 tracking-tight">{t.appTitle}</h1>
           </div>
-          
-          <button 
+
+          <button
             onClick={toggleLanguage}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 text-[10px] font-bold transition-all"
           >
@@ -95,9 +103,8 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading, language
             {language === 'vi' ? 'VN' : 'EN'}
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-3 relative">
-          
           {/* FROM Input */}
           <div className="relative group">
             <div className="absolute left-3 top-3.5 text-slate-400 group-focus-within:text-blue-500 transition-colors z-10">
@@ -112,11 +119,14 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading, language
               autoComplete="off"
               className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium text-slate-700 placeholder:text-slate-400"
             />
-            <SuggestionList 
-              query={from} 
-              locations={locations} 
-              visible={activeInput === 'from'} 
-              onSelect={(val) => { setFrom(val); setActiveInput(null); }} 
+            <SuggestionList
+              query={from}
+              locations={locations}
+              visible={activeInput === 'from'}
+              onSelect={(val) => {
+                setFrom(val);
+                setActiveInput(null);
+              }}
             />
           </div>
 
@@ -126,7 +136,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading, language
           {/* TO Input */}
           <div className="relative group">
             <div className="absolute left-3 top-3.5 text-slate-400 group-focus-within:text-red-500 transition-colors z-10">
-               <MapPin className="w-5 h-5" />
+              <MapPin className="w-5 h-5" />
             </div>
             <input
               type="text"
@@ -137,11 +147,14 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading, language
               autoComplete="off"
               className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all text-sm font-medium text-slate-700 placeholder:text-slate-400"
             />
-             <SuggestionList 
-              query={to} 
-              locations={locations} 
-              visible={activeInput === 'to'} 
-              onSelect={(val) => { setTo(val); setActiveInput(null); }} 
+            <SuggestionList
+              query={to}
+              locations={locations}
+              visible={activeInput === 'to'}
+              onSelect={(val) => {
+                setTo(val);
+                setActiveInput(null);
+              }}
             />
           </div>
 

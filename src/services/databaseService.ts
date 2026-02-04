@@ -1,9 +1,9 @@
 /**
  * Database Service - PostgreSQL connection (basic setup for future use)
- * 
+ *
  * NOTE: This service is prepared for future backend integration.
  * Currently, the app uses static JSON files for places data.
- * 
+ *
  * When you're ready to integrate PostgreSQL:
  * 1. Install: npm install pg @types/pg
  * 2. Set environment variables: DATABASE_URL
@@ -29,7 +29,7 @@ export const DEFAULT_DB_CONFIG: DatabaseConfig = {
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || '',
   ssl: process.env.DB_SSL === 'true',
-  max: 20
+  max: 20,
 };
 
 /**
@@ -195,4 +195,5 @@ export async function searchPlacesDB(
 
 // Placeholder exports for type checking
 export const DATABASE_READY = false;
-export const DATABASE_PLACEHOLDER = 'PostgreSQL integration prepared. See comments in this file for setup instructions.';
+export const DATABASE_PLACEHOLDER =
+  'PostgreSQL integration prepared. See comments in this file for setup instructions.';

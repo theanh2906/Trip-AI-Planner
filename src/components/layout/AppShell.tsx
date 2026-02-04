@@ -17,9 +17,7 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
       {isMobile && <Header />}
       {!isMobile && <Header />}
       <Sidebar />
-      <main className={cn('relative w-full h-full', isMobile && 'pt-14 pb-16')}>
-        {children}
-      </main>
+      <main className={cn('relative w-full h-full', isMobile && 'pt-14 pb-16')}>{children}</main>
       {isMobile && <BottomNav />}
     </div>
   );

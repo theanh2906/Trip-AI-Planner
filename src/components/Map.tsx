@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from "react";
-import L from "leaflet";
-import { TimelineItem } from "../types";
-import { getCategoryColor } from "./Icons";
+import React, { useEffect, useRef } from 'react';
+import L from 'leaflet';
+import { TimelineItem } from '../types';
+import { getCategoryColor } from './Icons';
 
 interface MapProps {
   items: TimelineItem[];
@@ -24,12 +24,12 @@ const Map: React.FC<MapProps> = ({ items, navigationPath }) => {
         attributionControl: false, // Cleaner look, optional
       }).setView([14.0583, 108.2772], 6); // Center of Vietnam
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
       }).addTo(mapInstanceRef.current);
 
       // Add zoom control to bottom right
-      L.control.zoom({ position: "bottomright" }).addTo(mapInstanceRef.current);
+      L.control.zoom({ position: 'bottomright' }).addTo(mapInstanceRef.current);
 
       // Force map to recalculate size after a short delay to handle container rendering
       setTimeout(() => {
@@ -58,19 +58,19 @@ const Map: React.FC<MapProps> = ({ items, navigationPath }) => {
     validItems.forEach((item) => {
       if (item.coordinates) {
         // Create custom icon based on type
-        const colorClass = getCategoryColor(item.type).replace("bg-", "");
+        const colorClass = getCategoryColor(item.type).replace('bg-', '');
         const colorMap: Record<string, string> = {
-          "orange-500": "#f97316",
-          "emerald-500": "#10b981",
-          "pink-500": "#ec4899",
-          "indigo-500": "#6366f1",
-          "blue-500": "#3b82f6",
-          "gray-500": "#6b7280",
+          'orange-500': '#f97316',
+          'emerald-500': '#10b981',
+          'pink-500': '#ec4899',
+          'indigo-500': '#6366f1',
+          'blue-500': '#3b82f6',
+          'gray-500': '#6b7280',
         };
-        const color = colorMap[colorClass] || "#3b82f6";
+        const color = colorMap[colorClass] || '#3b82f6';
 
         const customIcon = L.divIcon({
-          className: "custom-marker",
+          className: 'custom-marker',
           html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
           iconSize: [24, 24],
           iconAnchor: [12, 12],
@@ -104,7 +104,7 @@ const Map: React.FC<MapProps> = ({ items, navigationPath }) => {
         // OSRM expects {longitude},{latitude}
         const coordsString = routePoints
           .map((p) => `${p.coordinates!.lng},${p.coordinates!.lat}`)
-          .join(";");
+          .join(';');
 
         try {
           // Using OSRM public API for driving directions
@@ -112,22 +112,22 @@ const Map: React.FC<MapProps> = ({ items, navigationPath }) => {
           // If coordsString is too long, we might need to sample or split.
           // For typical itinerary (6-10 points), it should be fine.
           const response = await fetch(
-            `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`,
+            `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`
           );
 
           const data = await response.json();
 
-          if (data.code === "Ok" && data.routes && data.routes.length > 0) {
+          if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
             const geometry = data.routes[0].geometry;
 
             // Draw the route shape
             routeLayerRef.current = L.geoJSON(geometry, {
               style: {
-                color: navigationPath ? "#ef4444" : "#3b82f6", // Red for navigation, Blue for itinerary
+                color: navigationPath ? '#ef4444' : '#3b82f6', // Red for navigation, Blue for itinerary
                 weight: 5,
                 opacity: 0.8,
-                lineCap: "round",
-                lineJoin: "round",
+                lineCap: 'round',
+                lineJoin: 'round',
               },
             }).addTo(map);
 
@@ -136,7 +136,7 @@ const Map: React.FC<MapProps> = ({ items, navigationPath }) => {
             map.fitBounds(routeBounds, { padding: [50, 50] });
           }
         } catch (err) {
-          console.error("Failed to fetch route geometry", err);
+          console.error('Failed to fetch route geometry', err);
           // Fallback: Draw polyline connecting points
           const latlngs = routePoints.map((p) => [
             p.coordinates!.lat,
@@ -145,10 +145,10 @@ const Map: React.FC<MapProps> = ({ items, navigationPath }) => {
 
           routeLayerRef.current = (
             L.polyline(latlngs, {
-              color: navigationPath ? "#ef4444" : "#3b82f6",
+              color: navigationPath ? '#ef4444' : '#3b82f6',
               weight: 4,
               opacity: 0.5,
-              dashArray: "10, 10",
+              dashArray: '10, 10',
             }) as any
           ).addTo(map);
 

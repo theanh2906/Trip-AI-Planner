@@ -22,10 +22,16 @@ export interface Coordinates {
 
 export enum TravelMode {
   CAR = 'CAR',
-  MOTORBIKE = 'MOTORBIKE'
+  MOTORBIKE = 'MOTORBIKE',
+  PLANE = 'PLANE',
 }
 
 export type TripStyle = 'adventure' | 'relaxing' | 'photography' | 'foodie' | 'cultural' | 'nature';
+
+export interface HotelBudget {
+  min: number; // VNĐ per night
+  max: number; // VNĐ per night
+}
 
 export interface TripSearchParams {
   origin: string;
@@ -33,6 +39,10 @@ export interface TripSearchParams {
   travelMode: TravelMode;
   tripStyles: TripStyle[];
   date?: string;
+  // Hotel booking fields
+  departureDate?: string; // ISO date: "2026-02-15"
+  nights?: number; // 1-30
+  hotelBudget?: HotelBudget;
 }
 
 export interface RouteOption {
@@ -49,7 +59,7 @@ export enum StopType {
   FOOD = 'FOOD',
   REST = 'REST',
   HOTEL = 'HOTEL',
-  PHOTO_OP = 'PHOTO_OP'
+  PHOTO_OP = 'PHOTO_OP',
 }
 
 export interface TimelineItem {
@@ -66,6 +76,19 @@ export interface TimelineItem {
   tips?: string[];
 }
 
+export interface HotelRecommendation {
+  id: string;
+  name: string;
+  rating: string; // "4.5/5"
+  pricePerNight: number; // VNĐ
+  totalPrice: number; // VNĐ (pricePerNight * nights)
+  description: string;
+  amenities: string[]; // ["Wifi", "Pool", "Breakfast"]
+  location: string; // "Trung tâm Đà Lạt"
+  coordinates?: Coordinates;
+  imageUrl?: string;
+}
+
 export interface TripData {
   origin: string;
   destination: string;
@@ -73,6 +96,7 @@ export interface TripData {
   tripStyles?: TripStyle[];
   selectedRoute?: RouteOption;
   itinerary?: TimelineItem[];
+  hotels?: HotelRecommendation[];
 }
 
 export interface TripStyleConfig {
@@ -84,10 +108,46 @@ export interface TripStyleConfig {
 }
 
 export const TRIP_STYLES: TripStyleConfig[] = [
-  { id: 'adventure', labelVi: 'Phiêu lưu', labelEn: 'Adventure', icon: '🏔️', color: 'bg-orange-100 text-orange-700 border-orange-200' },
-  { id: 'relaxing', labelVi: 'Thư giãn', labelEn: 'Relaxing', icon: '😌', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  { id: 'photography', labelVi: 'Chụp ảnh', labelEn: 'Photography', icon: '📸', color: 'bg-purple-100 text-purple-700 border-purple-200' },
-  { id: 'foodie', labelVi: 'Ẩm thực', labelEn: 'Foodie', icon: '🍜', color: 'bg-red-100 text-red-700 border-red-200' },
-  { id: 'cultural', labelVi: 'Văn hóa', labelEn: 'Cultural', icon: '🏛️', color: 'bg-amber-100 text-amber-700 border-amber-200' },
-  { id: 'nature', labelVi: 'Thiên nhiên', labelEn: 'Nature', icon: '🌿', color: 'bg-green-100 text-green-700 border-green-200' },
+  {
+    id: 'adventure',
+    labelVi: 'Phiêu lưu',
+    labelEn: 'Adventure',
+    icon: '🏔️',
+    color: 'bg-orange-100 text-orange-700 border-orange-200',
+  },
+  {
+    id: 'relaxing',
+    labelVi: 'Thư giãn',
+    labelEn: 'Relaxing',
+    icon: '😌',
+    color: 'bg-blue-100 text-blue-700 border-blue-200',
+  },
+  {
+    id: 'photography',
+    labelVi: 'Chụp ảnh',
+    labelEn: 'Photography',
+    icon: '📸',
+    color: 'bg-purple-100 text-purple-700 border-purple-200',
+  },
+  {
+    id: 'foodie',
+    labelVi: 'Ẩm thực',
+    labelEn: 'Foodie',
+    icon: '🍜',
+    color: 'bg-red-100 text-red-700 border-red-200',
+  },
+  {
+    id: 'cultural',
+    labelVi: 'Văn hóa',
+    labelEn: 'Cultural',
+    icon: '🏛️',
+    color: 'bg-amber-100 text-amber-700 border-amber-200',
+  },
+  {
+    id: 'nature',
+    labelVi: 'Thiên nhiên',
+    labelEn: 'Nature',
+    icon: '🌿',
+    color: 'bg-green-100 text-green-700 border-green-200',
+  },
 ];

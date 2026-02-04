@@ -24,17 +24,22 @@ const BottomNav: React.FC = () => {
   const t = translations[language];
 
   const handleClick = (item: NavItem) => {
-    if (item.id === 'more') { toggleSidebar(); return; }
+    if (item.id === 'more') {
+      toggleSidebar();
+      return;
+    }
     if (item.disabled) return;
     setActiveFeature(item.id as FeatureType);
   };
 
   return (
-    <nav className={cn(
-      'fixed bottom-0 left-0 right-0 z-40',
-      'bg-white/95 backdrop-blur-xl border-t border-slate-200/50',
-      'pb-[env(safe-area-inset-bottom)] md:hidden'
-    )}>
+    <nav
+      className={cn(
+        'fixed bottom-0 left-0 right-0 z-40',
+        'bg-white/95 backdrop-blur-xl border-t border-slate-200/50',
+        'pb-[env(safe-area-inset-bottom)] md:hidden'
+      )}
+    >
       <div className="flex items-center justify-around h-16">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -50,9 +55,19 @@ const BottomNav: React.FC = () => {
               )}
             >
               <div className={cn('p-1.5 rounded-xl transition-all', isActive && 'bg-blue-100')}>
-                <Icon className={cn('w-5 h-5 transition-colors', isActive ? 'text-blue-600' : 'text-slate-500')} />
+                <Icon
+                  className={cn(
+                    'w-5 h-5 transition-colors',
+                    isActive ? 'text-blue-600' : 'text-slate-500'
+                  )}
+                />
               </div>
-              <span className={cn('text-[10px] font-medium mt-0.5', isActive ? 'text-blue-600' : 'text-slate-500')}>
+              <span
+                className={cn(
+                  'text-[10px] font-medium mt-0.5',
+                  isActive ? 'text-blue-600' : 'text-slate-500'
+                )}
+              >
                 {t[item.labelKey] as string}
               </span>
             </button>

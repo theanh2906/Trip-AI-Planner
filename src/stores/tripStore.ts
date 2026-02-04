@@ -1,6 +1,17 @@
 import { create } from 'zustand';
-import { RouteOption, TimelineItem, TravelMode, TripStyle, TripSearchParams } from '../types';
-import { fetchRouteOptions, fetchItinerary } from '../services/geminiService';
+import {
+  RouteOption,
+  TimelineItem,
+  TravelMode,
+  TripSearchParams,
+  HotelRecommendation,
+  HotelBudget,
+} from '../types';
+import {
+  fetchRouteOptions,
+  fetchItinerary,
+  fetchHotelRecommendations,
+} from '../services/geminiService';
 import { useAppStore } from './appStore';
 
 interface TripState {
@@ -8,18 +19,29 @@ interface TripState {
   routes: RouteOption[];
   selectedRoute: RouteOption | null;
   itinerary: TimelineItem[];
+  hotels: HotelRecommendation[];
   navigationPath: [TimelineItem, TimelineItem] | null;
   isLoadingRoutes: boolean;
   isLoadingItinerary: boolean;
+  isLoadingHotels: boolean;
   isMobileMapView: boolean;
-  
+  showTripDetailsModal: boolean;
+
   setSearchParams: (params: Partial<TripSearchParams>) => void;
   search: () => Promise<void>;
   selectRoute: (route: RouteOption) => Promise<void>;
+  selectRouteWithDetails: (
+    route: RouteOption,
+    departureDate: string,
+    nights: number,
+    hotelBudget: HotelBudget
+  ) => Promise<void>;
   navigateTo: (item: TimelineItem) => void;
   backToRoutes: () => void;
   backToSearch: () => void;
   toggleMobileView: () => void;
+  openTripDetailsModal: () => void;
+  closeTripDetailsModal: () => void;
   reset: () => void;
 }
 
@@ -35,27 +57,43 @@ export const useTripStore = create<TripState>((set, get) => ({
   routes: [],
   selectedRoute: null,
   itinerary: [],
+  hotels: [],
   navigationPath: null,
   isLoadingRoutes: false,
   isLoadingItinerary: false,
+  isLoadingHotels: false,
   isMobileMapView: false,
-  
-  setSearchParams: (params) => set((state) => ({
-    searchParams: state.searchParams 
-      ? { ...state.searchParams, ...params }
-      : { ...initialSearchParams, ...params }
-  })),
-  
+  showTripDetailsModal: false,
+
+  setSearchParams: (params) =>
+    set((state) => ({
+      searchParams: state.searchParams
+        ? { ...state.searchParams, ...params }
+        : { ...initialSearchParams, ...params },
+    })),
+
   search: async () => {
     const { searchParams } = get();
     if (!searchParams?.origin || !searchParams?.destination) return;
-    
+
     const language = useAppStore.getState().language;
-    
-    set({ isLoadingRoutes: true, routes: [], selectedRoute: null, itinerary: [], navigationPath: null });
-    
+
+    set({
+      isLoadingRoutes: true,
+      routes: [],
+      selectedRoute: null,
+      itinerary: [],
+      hotels: [],
+      navigationPath: null,
+    });
+
     try {
-      const results = await fetchRouteOptions(searchParams.origin, searchParams.destination, language);
+      const results = await fetchRouteOptions(
+        searchParams.origin,
+        searchParams.destination,
+        language,
+        searchParams.travelMode
+      );
       set({ routes: results });
     } catch (error) {
       console.error('Failed to fetch routes:', error);
@@ -63,17 +101,28 @@ export const useTripStore = create<TripState>((set, get) => ({
       set({ isLoadingRoutes: false });
     }
   },
-  
+
   selectRoute: async (route) => {
     const { searchParams } = get();
     if (!searchParams) return;
-    
+
     const language = useAppStore.getState().language;
-    
-    set({ selectedRoute: route, isLoadingItinerary: true, isMobileMapView: false });
-    
+
+    set({
+      selectedRoute: route,
+      isLoadingItinerary: true,
+      isMobileMapView: false,
+      showTripDetailsModal: false,
+    });
+
     try {
-      const items = await fetchItinerary(searchParams.origin, searchParams.destination, route.name, language);
+      const items = await fetchItinerary(
+        searchParams.origin,
+        searchParams.destination,
+        route.name,
+        language,
+        searchParams.travelMode
+      );
       set({ itinerary: items });
     } catch (error) {
       console.error('Failed to fetch itinerary:', error);
@@ -81,25 +130,84 @@ export const useTripStore = create<TripState>((set, get) => ({
       set({ isLoadingItinerary: false });
     }
   },
-  
+
+  selectRouteWithDetails: async (route, departureDate, nights, hotelBudget) => {
+    const { searchParams } = get();
+    if (!searchParams) return;
+
+    const language = useAppStore.getState().language;
+
+    // Update search params with hotel details
+    set((state) => ({
+      searchParams: state.searchParams
+        ? { ...state.searchParams, departureDate, nights, hotelBudget }
+        : { ...initialSearchParams, departureDate, nights, hotelBudget },
+      selectedRoute: route,
+      isLoadingItinerary: true,
+      isLoadingHotels: true,
+      isMobileMapView: false,
+      showTripDetailsModal: false,
+    }));
+
+    try {
+      // Fetch itinerary and hotels in parallel
+      const [items, hotelResults] = await Promise.all([
+        fetchItinerary(
+          searchParams.origin,
+          searchParams.destination,
+          route.name,
+          language,
+          searchParams.travelMode
+        ),
+        fetchHotelRecommendations(
+          searchParams.destination,
+          nights,
+          hotelBudget.min,
+          hotelBudget.max,
+          language,
+          searchParams.tripStyles
+        ),
+      ]);
+
+      set({ itinerary: items, hotels: hotelResults });
+    } catch (error) {
+      console.error('Failed to fetch itinerary or hotels:', error);
+    } finally {
+      set({ isLoadingItinerary: false, isLoadingHotels: false });
+    }
+  },
+
   navigateTo: (item) => {
     const { itinerary } = get();
     if (itinerary.length > 0) {
       set({ navigationPath: [itinerary[0], item] });
     }
   },
-  
-  backToRoutes: () => set({ itinerary: [], selectedRoute: null, navigationPath: null }),
-  backToSearch: () => set({ routes: [], selectedRoute: null, itinerary: [], navigationPath: null }),
+
+  backToRoutes: () => set({ itinerary: [], hotels: [], selectedRoute: null, navigationPath: null }),
+  backToSearch: () =>
+    set({
+      routes: [],
+      selectedRoute: null,
+      itinerary: [],
+      hotels: [],
+      navigationPath: null,
+    }),
   toggleMobileView: () => set((state) => ({ isMobileMapView: !state.isMobileMapView })),
-  reset: () => set({
-    searchParams: initialSearchParams,
-    routes: [],
-    selectedRoute: null,
-    itinerary: [],
-    navigationPath: null,
-    isLoadingRoutes: false,
-    isLoadingItinerary: false,
-    isMobileMapView: false,
-  }),
+  openTripDetailsModal: () => set({ showTripDetailsModal: true }),
+  closeTripDetailsModal: () => set({ showTripDetailsModal: false }),
+  reset: () =>
+    set({
+      searchParams: initialSearchParams,
+      routes: [],
+      selectedRoute: null,
+      itinerary: [],
+      hotels: [],
+      navigationPath: null,
+      isLoadingRoutes: false,
+      isLoadingItinerary: false,
+      isLoadingHotels: false,
+      isMobileMapView: false,
+      showTripDetailsModal: false,
+    }),
 }));
