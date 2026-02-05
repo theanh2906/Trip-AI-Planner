@@ -22,6 +22,21 @@ html, body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Prevent iOS auto-zoom on input focus (requires font-size >= 16px) */
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+@media screen and (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 /* Custom Scrollbar for the sidebar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
