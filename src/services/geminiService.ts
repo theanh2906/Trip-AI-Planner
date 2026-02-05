@@ -18,6 +18,7 @@ import {
   buildHotelPrompt,
   getFallbackRouteMessage,
   detectRegion,
+  requiresFlying,
 } from './promptService';
 
 // ============================================================================
@@ -86,6 +87,9 @@ const itinerarySchema = {
           StopType.REST,
           StopType.HOTEL,
           StopType.PHOTO_OP,
+          StopType.DEPARTURE,
+          StopType.ARRIVAL,
+          StopType.TRANSIT,
         ],
       },
       locationName: { type: Type.STRING, description: 'City or specific address area' },

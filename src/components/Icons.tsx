@@ -1,5 +1,15 @@
 import React from 'react';
-import { MapPin, Utensils, Camera, Bed, Coffee, Navigation } from 'lucide-react';
+import {
+  MapPin,
+  Utensils,
+  Camera,
+  Bed,
+  Coffee,
+  Navigation,
+  PlaneTakeoff,
+  PlaneLanding,
+  ArrowRightLeft,
+} from 'lucide-react';
 import { StopType } from '../types';
 
 interface IconProps {
@@ -21,6 +31,12 @@ export const CategoryIcon: React.FC<IconProps> = ({ type, className }) => {
       return <Bed className={commonClass} />;
     case StopType.REST:
       return <Coffee className={commonClass} />;
+    case StopType.DEPARTURE:
+      return <PlaneTakeoff className={commonClass} />;
+    case StopType.ARRIVAL:
+      return <PlaneLanding className={commonClass} />;
+    case StopType.TRANSIT:
+      return <ArrowRightLeft className={commonClass} />;
     default:
       return <Navigation className={commonClass} />;
   }
@@ -38,6 +54,12 @@ export const getCategoryColor = (type: StopType) => {
       return 'bg-indigo-500';
     case StopType.REST:
       return 'bg-blue-500';
+    case StopType.DEPARTURE:
+      return 'bg-sky-500';
+    case StopType.ARRIVAL:
+      return 'bg-teal-500';
+    case StopType.TRANSIT:
+      return 'bg-amber-500';
     default:
       return 'bg-gray-500';
   }

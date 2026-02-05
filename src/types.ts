@@ -60,6 +60,9 @@ export enum StopType {
   REST = 'REST',
   HOTEL = 'HOTEL',
   PHOTO_OP = 'PHOTO_OP',
+  DEPARTURE = 'DEPARTURE',
+  ARRIVAL = 'ARRIVAL',
+  TRANSIT = 'TRANSIT',
 }
 
 export interface TimelineItem {

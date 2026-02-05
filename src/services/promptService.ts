@@ -107,6 +107,88 @@ export const getTravelModeConfig = (mode: TravelMode, lang: Language): TravelMod
 };
 
 // ============================================================================
+// TRIP FEASIBILITY DETECTION
+// ============================================================================
+
+/**
+ * Detect if a trip requires flying (international or cross-ocean)
+ * Returns true if driving/motorbike is NOT feasible
+ */
+export const requiresFlying = (origin: string, destination: string): boolean => {
+  const originRegion = detectRegion(origin, '');
+  const destRegion = detectRegion('', destination);
+
+  // If regions are different and not land-connected, requires flying
+  const landConnectedRegions = new Set([
+    // Southeast Asia mainland
+    'Vietnam-Thailand',
+    'Thailand-Vietnam',
+    'Vietnam-Cambodia',
+    'Cambodia-Vietnam',
+    'Vietnam-Laos',
+    'Laos-Vietnam',
+    'Thailand-Cambodia',
+    'Cambodia-Thailand',
+    'Thailand-Laos',
+    'Laos-Thailand',
+    'Thailand-Myanmar',
+    'Myanmar-Thailand',
+    'Thailand-Malaysia',
+    'Malaysia-Thailand',
+    'Malaysia-Singapore',
+    'Singapore-Malaysia',
+    // China connections
+    'Vietnam-China',
+    'China-Vietnam',
+    'Laos-China',
+    'China-Laos',
+    'Myanmar-China',
+    'China-Myanmar',
+  ]);
+
+  // Same region = driveable
+  if (originRegion === destRegion) {
+    return false;
+  }
+
+  // Check if land-connected
+  const connectionKey = `${originRegion}-${destRegion}`;
+  if (landConnectedRegions.has(connectionKey)) {
+    return false;
+  }
+
+  // Island nations always require flying from mainland
+  const islandRegions = ['Japan', 'South Korea', 'Philippines', 'Indonesia', 'Australia', 'New Zealand', 'Singapore'];
+  if (islandRegions.includes(destRegion) || islandRegions.includes(originRegion)) {
+    // Exception: Singapore-Malaysia are connected
+    if (
+      (originRegion === 'Singapore' && destRegion === 'Malaysia') ||
+      (originRegion === 'Malaysia' && destRegion === 'Singapore')
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  // Different continents = requires flying
+  const asiaPacific = ['Vietnam', 'Thailand', 'Cambodia', 'Laos', 'Myanmar', 'Malaysia', 'Singapore', 'Indonesia', 'Philippines', 'China', 'Japan', 'South Korea', 'India'];
+  const oceania = ['Australia', 'New Zealand'];
+
+  const originInAsia = asiaPacific.includes(originRegion);
+  const destInAsia = asiaPacific.includes(destRegion);
+  const originInOceania = oceania.includes(originRegion);
+  const destInOceania = oceania.includes(destRegion);
+
+  // Cross-continent = requires flying
+  if ((originInAsia && destInOceania) || (originInOceania && destInAsia)) {
+    return true;
+  }
+
+  // Default: if regions are very different, likely requires flying
+  return originRegion !== destRegion && originRegion !== 'Asia-Pacific' && destRegion !== 'Asia-Pacific';
+};
+
+// ============================================================================
 // ROUTE OPTIONS PROMPT
 // ============================================================================
 
@@ -120,14 +202,26 @@ export interface RouteOptionsPromptParams {
 export const buildRouteOptionsPrompt = (params: RouteOptionsPromptParams): string => {
   const { origin, destination, lang, travelMode } = params;
   const region = detectRegion(origin, destination);
-  const modeConfig = getTravelModeConfig(travelMode, lang);
   const langInstruction = getLangInstruction(lang);
   const regionContext = region !== 'Asia-Pacific' ? ` in ${region}` : '';
+
+  // Check if trip requires flying
+  const mustFly = requiresFlying(origin, destination);
+  const effectiveMode = mustFly ? TravelMode.PLANE : travelMode;
+  const modeConfig = getTravelModeConfig(effectiveMode, lang);
+
+  // Add warning if user selected ground transport but must fly
+  const modeOverrideNote =
+    mustFly && travelMode !== TravelMode.PLANE
+      ? lang === 'vi'
+        ? '\nLƯU Ý: Đây là chuyến đi quốc tế/xuyên đại dương, chỉ có thể di chuyển bằng máy bay.'
+        : '\nNOTE: This is an international/cross-ocean trip, only air travel is possible.'
+      : '';
 
   return `
 I am planning a ${modeConfig.tripType} from ${origin} to ${destination}${regionContext}.
 Suggest ${modeConfig.routeTypes}.
-${modeConfig.routeConsiderations}
+${modeConfig.routeConsiderations}${modeOverrideNote}
 ${langInstruction}
 Return the response in a structured JSON format.
 `.trim();
@@ -215,8 +309,12 @@ export const buildItineraryPrompt = (params: ItineraryPromptParams): string => {
   const langInstruction = getLangInstruction(lang);
   const regionContext = region !== 'Asia-Pacific' ? region : 'the region';
 
+  // Override travel mode if trip requires flying
+  const mustFly = requiresFlying(origin, destination);
+  const effectiveMode = mustFly ? TravelMode.PLANE : travelMode;
+
   const itineraryInstructions =
-    travelMode === TravelMode.PLANE
+    effectiveMode === TravelMode.PLANE
       ? buildFlightItineraryInstructions(origin, destination, routeName, lang)
       : buildGroundItineraryInstructions(origin, destination, routeName, lang);
 
