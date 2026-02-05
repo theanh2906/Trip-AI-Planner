@@ -73,6 +73,7 @@ const itinerarySchema = {
   items: {
     type: Type.OBJECT,
     properties: {
+      day: { type: Type.NUMBER, description: 'Day number (1, 2, 3...)' },
       time: { type: Type.STRING, description: 'Time of arrival/activity (e.g. 07:30 AM)' },
       title: { type: Type.STRING, description: 'Name of the place or activity' },
       description: {
@@ -103,7 +104,7 @@ const itinerarySchema = {
         required: ['lat', 'lng'],
       },
     },
-    required: ['time', 'title', 'description', 'type', 'locationName', 'coordinates'],
+    required: ['day', 'time', 'title', 'description', 'type', 'locationName', 'coordinates'],
   },
 };
 
@@ -195,9 +196,10 @@ export const fetchItinerary = async (
   destination: string,
   routeName: string,
   lang: Language,
-  travelMode: TravelMode = TravelMode.CAR
+  travelMode: TravelMode = TravelMode.CAR,
+  nights: number = 1
 ): Promise<TimelineItem[]> => {
-  const prompt = buildItineraryPrompt({ origin, destination, routeName, lang, travelMode });
+  const prompt = buildItineraryPrompt({ origin, destination, routeName, lang, travelMode, nights });
   const region = detectRegion(origin, destination);
 
   try {
@@ -212,9 +214,10 @@ export const fetchItinerary = async (
 
     if (response.text) {
       const items = JSON.parse(response.text) as TimelineItem[];
-      // Add images to each item
+      // Add images to each item, ensure day defaults to 1 if not provided
       return items.map((item) => ({
         ...item,
+        day: item.day || 1,
         imageUrl: getLocationImage(item.title, item.locationName, region),
       }));
     }

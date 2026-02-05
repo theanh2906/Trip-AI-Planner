@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { CategoryIcon, getCategoryColor } from '../../Icons';
 import {
   Star,
@@ -10,6 +10,8 @@ import {
   Map as MapIcon,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  Calendar,
 } from 'lucide-react';
 import { translations } from '../../../utils/i18n';
 import { useAppStore } from '../../../stores/appStore';
@@ -20,11 +22,35 @@ import HotelSection from './HotelSection';
 
 const Timeline: React.FC = () => {
   const { language } = useAppStore();
-  const { itinerary, selectedRoute, backToRoutes, navigateTo, isMobileMapView, toggleMobileView } =
-    useTripStore();
+  const {
+    itinerary,
+    selectedRoute,
+    backToRoutes,
+    navigateTo,
+    isMobileMapView,
+    toggleMobileView,
+    selectedDay,
+    setSelectedDay,
+    searchParams,
+  } = useTripStore();
   const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isDayDropdownOpen, setIsDayDropdownOpen] = useState(false);
   const t = translations[language];
+
+  // Get unique days from itinerary
+  const availableDays = useMemo(() => {
+    const days = [...new Set(itinerary.map((item) => item.day))].sort((a, b) => a - b);
+    return days.length > 0 ? days : [1];
+  }, [itinerary]);
+
+  // Filter itinerary by selected day
+  const filteredItinerary = useMemo(() => {
+    return itinerary.filter((item) => item.day === selectedDay);
+  }, [itinerary, selectedDay]);
+
+  // Check if multi-day trip
+  const isMultiDay = availableDays.length > 1;
 
   if (!selectedRoute || itinerary.length === 0) return null;
 
@@ -55,21 +81,98 @@ const Timeline: React.FC = () => {
         >
           {isCollapsed ? <ChevronRight className="w-6 h-6" /> : <ChevronLeft className="w-6 h-6" />}
         </button>
-        <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-white sticky top-0 flex-shrink-0">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-800">{t.itineraryTitle}</h2>
-            <p className="text-slate-500 text-sm mt-1">{t.suggestedBy}</p>
+        <div className="flex flex-col border-b border-slate-100 bg-white sticky top-0 flex-shrink-0 z-10">
+          <div className="flex items-center justify-between p-6 pb-3">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800">{t.itineraryTitle}</h2>
+              <p className="text-slate-500 text-sm mt-1">{t.suggestedBy}</p>
+            </div>
+            <button
+              onClick={backToRoutes}
+              className="p-2 hover:bg-slate-100 rounded-full text-slate-500"
+            >
+              <X className="w-6 h-6" />
+            </button>
           </div>
-          <button
-            onClick={backToRoutes}
-            className="p-2 hover:bg-slate-100 rounded-full text-slate-500"
-          >
-            <X className="w-6 h-6" />
-          </button>
+
+          {/* Day Selector - only show for multi-day trips */}
+          {isMultiDay && (
+            <div className="px-6 pb-4">
+              <div className="relative">
+                <button
+                  onClick={() => setIsDayDropdownOpen(!isDayDropdownOpen)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl text-slate-700 font-medium hover:from-blue-100 hover:to-indigo-100 transition-all"
+                >
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-blue-500" />
+                    <span>
+                      {t.dayLabel} {selectedDay}
+                    </span>
+                    <span className="text-slate-400 text-sm">
+                      ({filteredItinerary.length} {language === 'vi' ? 'hoạt động' : 'activities'})
+                    </span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      'w-5 h-5 text-slate-400 transition-transform',
+                      isDayDropdownOpen && 'rotate-180'
+                    )}
+                  />
+                </button>
+
+                {/* Dropdown Menu */}
+                {isDayDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-20">
+                    {availableDays.map((day) => {
+                      const dayItemCount = itinerary.filter((item) => item.day === day).length;
+                      return (
+                        <button
+                          key={day}
+                          onClick={() => {
+                            setSelectedDay(day);
+                            setIsDayDropdownOpen(false);
+                          }}
+                          className={cn(
+                            'w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition-colors',
+                            selectedDay === day && 'bg-blue-50 text-blue-700'
+                          )}
+                        >
+                          <span className="font-medium">
+                            {t.dayLabel} {day}
+                          </span>
+                          <span className="text-sm text-slate-400">
+                            {dayItemCount} {language === 'vi' ? 'hoạt động' : 'activities'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Day Pills for quick switching */}
+              <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-hide">
+                {availableDays.map((day) => (
+                  <button
+                    key={day}
+                    onClick={() => setSelectedDay(day)}
+                    className={cn(
+                      'px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all',
+                      selectedDay === day
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    )}
+                  >
+                    {t.dayLabel} {day}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-slate-50 pb-24 md:pb-6">
           <div className="relative pl-6 border-l-2 border-slate-200 space-y-8 pb-10">
-            {itinerary.map((item, index) => (
+            {filteredItinerary.map((item, index) => (
               <div key={index} className="relative group">
                 <div
                   className={cn(

@@ -237,44 +237,63 @@ export interface ItineraryPromptParams {
   routeName: string;
   lang: Language;
   travelMode: TravelMode;
+  nights?: number; // Number of nights (default: 1)
 }
 
 const buildFlightItineraryInstructions = (
   origin: string,
   destination: string,
   routeName: string,
-  lang: Language
+  lang: Language,
+  nights: number
 ): string => {
   const isVi = lang === 'vi';
+  const totalDays = nights + 1; // nights + 1 = total days
 
   if (isVi) {
     return `
-Tạo lịch trình chi tiết cho chuyến bay từ ${origin} đến ${destination} sử dụng: "${routeName}".
-Lịch trình nên bao gồm:
+Tạo lịch trình chi tiết ${totalDays} NGÀY cho chuyến bay từ ${origin} đến ${destination} sử dụng: "${routeName}".
+
+NGÀY 1: Di chuyển + khám phá ban đầu
 - Khởi hành từ sân bay ${origin}
 - Điểm dừng/quá cảnh nếu có
 - Đến sân bay ${destination}
-- Các điểm tham quan và hoạt động chính tại điểm đến
-- Nhà hàng và quán ăn nổi tiếng địa phương
-- Gợi ý tham quan
+- Khám phá khu vực xung quanh khách sạn
 
-Mục ĐẦU TIÊN PHẢI là Sân bay Khởi hành tại ${origin}.
-Mục CUỐI CÙNG nên là điểm tham quan hoặc khách sạn đáng chú ý tại ${destination}.
+${nights >= 2 ? `NGÀY 2 đến NGÀY ${totalDays - 1}: Khám phá ${destination}
+- Các điểm tham quan và hoạt động chính
+- Nhà hàng và quán ăn nổi tiếng địa phương
+- Điểm check-in, chụp ảnh đẹp` : ''}
+
+NGÀY ${totalDays}: Ngày cuối
+- Hoạt động buổi sáng trước khi ra sân bay
+- Di chuyển ra sân bay ${destination}
+- Bay về ${origin}
+
+QUAN TRỌNG: Mỗi item PHẢI có field "day" là số ngày (1, 2, 3...).
 `;
   }
 
   return `
-Create a detailed travel itinerary for a flight trip from ${origin} to ${destination} using: "${routeName}".
-The itinerary should include:
-- Departure from origin airport
-- Any layovers/stopovers if applicable
-- Arrival at destination airport
-- Key attractions and activities at the destination
-- Famous local restaurants and food spots
-- Sightseeing recommendations
+Create a detailed ${totalDays}-DAY itinerary for a flight trip from ${origin} to ${destination} using: "${routeName}".
 
-The FIRST item MUST be the Departure Airport in ${origin}.
-The LAST item should be a notable attraction or hotel in ${destination}.
+DAY 1: Travel + initial exploration
+- Departure from ${origin} airport
+- Any layovers/stopovers if applicable
+- Arrival at ${destination} airport
+- Explore area around the hotel
+
+${nights >= 2 ? `DAY 2 to DAY ${totalDays - 1}: Explore ${destination}
+- Key attractions and activities
+- Famous local restaurants and food spots
+- Photo spots and sightseeing` : ''}
+
+DAY ${totalDays}: Final day
+- Morning activities before airport
+- Transfer to ${destination} airport
+- Flight back to ${origin}
+
+IMPORTANT: Each item MUST have a "day" field with the day number (1, 2, 3...).
 `;
 };
 
@@ -282,32 +301,69 @@ const buildGroundItineraryInstructions = (
   origin: string,
   destination: string,
   routeName: string,
-  lang: Language
+  lang: Language,
+  nights: number
 ): string => {
   const isVi = lang === 'vi';
+  const totalDays = nights + 1;
 
   if (isVi) {
     return `
-Tạo lịch trình chi tiết cho chuyến đi từ ${origin} đến ${destination} theo tuyến đường: "${routeName}".
-Lịch trình nên là timeline các điểm dừng bao gồm tham quan, ẩm thực (nhà hàng nổi tiếng địa phương), và điểm nghỉ.
-Mục ĐẦU TIÊN trong danh sách PHẢI là Điểm Khởi hành (${origin}).
-Mục CUỐI CÙNG trong danh sách PHẢI là Điểm Đến (${destination}).
+Tạo lịch trình chi tiết ${totalDays} NGÀY cho chuyến đi từ ${origin} đến ${destination} theo tuyến đường: "${routeName}".
+
+NGÀY 1: Di chuyển từ ${origin}
+- Khởi hành từ ${origin}
+- Các điểm dừng trên đường (ẩm thực, nghỉ ngơi, tham quan)
+- Đến ${destination} (hoặc điểm dừng chân nếu quãng đường xa)
+
+${nights >= 2 ? `NGÀY 2 đến NGÀY ${totalDays - 1}: Khám phá ${destination}
+- Các điểm tham quan chính
+- Nhà hàng và quán ăn nổi tiếng địa phương
+- Điểm check-in, chụp ảnh đẹp
+- Hoạt động theo phong cách du lịch` : ''}
+
+NGÀY ${totalDays}: Ngày cuối
+- Hoạt động buổi sáng
+- Di chuyển về ${origin}
+- Các điểm dừng trên đường về
+
+QUAN TRỌNG: Mỗi item PHẢI có field "day" là số ngày (1, 2, 3...).
+Lịch trình nên bao gồm tham quan, ẩm thực, nghỉ ngơi cho mỗi ngày.
 `;
   }
 
   return `
-Create a detailed travel itinerary for a trip from ${origin} to ${destination} specifically taking the route: "${routeName}".
-The itinerary should be a timeline of stops including sightseeing, food (famous local restaurants), and rest stops.
-The FIRST item in the list MUST be the Departure Point (${origin}).
-The LAST item in the list MUST be the Arrival Point (${destination}).
+Create a detailed ${totalDays}-DAY itinerary for a trip from ${origin} to ${destination} taking the route: "${routeName}".
+
+DAY 1: Travel from ${origin}
+- Departure from ${origin}
+- Stops along the way (food, rest, sightseeing)
+- Arrive at ${destination} (or midway stop if long distance)
+
+${nights >= 2 ? `DAY 2 to DAY ${totalDays - 1}: Explore ${destination}
+- Key attractions
+- Famous local restaurants and food spots
+- Photo spots and sightseeing
+- Activities based on trip style` : ''}
+
+DAY ${totalDays}: Final day
+- Morning activities
+- Travel back to ${origin}
+- Stops along the return journey
+
+IMPORTANT: Each item MUST have a "day" field with the day number (1, 2, 3...).
+The itinerary should include sightseeing, food, and rest stops for each day.
 `;
 };
 
 export const buildItineraryPrompt = (params: ItineraryPromptParams): string => {
-  const { origin, destination, routeName, lang, travelMode } = params;
+  const { origin, destination, routeName, lang, travelMode, nights = 1 } = params;
   const region = detectRegion(origin, destination);
   const langInstruction = getLangInstruction(lang);
   const regionContext = region !== 'Asia-Pacific' ? region : 'the region';
+  const totalDays = nights + 1;
+  const itemsPerDay = 4; // ~4 items per day
+  const totalItems = totalDays * itemsPerDay;
 
   // Override travel mode if trip requires flying
   const mustFly = requiresFlying(origin, destination);
@@ -315,26 +371,30 @@ export const buildItineraryPrompt = (params: ItineraryPromptParams): string => {
 
   const itineraryInstructions =
     effectiveMode === TravelMode.PLANE
-      ? buildFlightItineraryInstructions(origin, destination, routeName, lang)
-      : buildGroundItineraryInstructions(origin, destination, routeName, lang);
+      ? buildFlightItineraryInstructions(origin, destination, routeName, lang, nights)
+      : buildGroundItineraryInstructions(origin, destination, routeName, lang, nights);
 
   const isVi = lang === 'vi';
   const commonInstructions = isVi
     ? `
-QUAN TRỌNG: Cung cấp tọa độ latitude và longitude gần đúng cho MỖI điểm dừng.
+QUAN TRỌNG:
+- Cung cấp tọa độ latitude và longitude gần đúng cho MỖI điểm dừng.
+- MỖI item PHẢI có field "day" (số nguyên: 1, 2, 3...).
+- Cung cấp khoảng ${totalItems} mục (khoảng ${itemsPerDay} mục mỗi ngày).
 
 Tập trung vào các địa điểm phổ biến, được đánh giá cao tại ${regionContext}.
 Bao gồm ẩm thực địa phương và điểm tham quan văn hóa đặc trưng của khu vực này.
-Giả định khởi hành vào sáng sớm.
-Cung cấp khoảng 6-10 mục.
+Giả định khởi hành vào sáng sớm mỗi ngày.
 `
     : `
-IMPORTANT: Provide approximate latitude and longitude coordinates for EACH stop.
+IMPORTANT:
+- Provide approximate latitude and longitude coordinates for EACH stop.
+- Each item MUST have a "day" field (integer: 1, 2, 3...).
+- Provide about ${totalItems} items (approximately ${itemsPerDay} items per day).
 
 Focus on popular, highly-rated locations in ${regionContext}.
 Include local cuisine and cultural attractions specific to this area.
-Assume an early morning departure.
-Provide about 6-10 items.
+Assume an early morning departure each day.
 `;
 
   return `

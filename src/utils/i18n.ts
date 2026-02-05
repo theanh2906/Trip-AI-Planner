@@ -60,6 +60,10 @@ export const translations = {
     loadingHotels: 'Đang tìm khách sạn...',
     noHotels: 'Không tìm thấy khách sạn phù hợp',
     priceDisclaimer: 'Giá ước tính, có thể thay đổi',
+    // Day Selector
+    dayLabel: 'Ngày',
+    allDays: 'Tất cả ngày',
+    selectDay: 'Chọn ngày',
   },
   en: {
     appTitle: 'TripAI',
@@ -120,5 +124,9 @@ export const translations = {
     loadingHotels: 'Finding hotels...',
     noHotels: 'No suitable hotels found',
     priceDisclaimer: 'Estimated prices, subject to change',
+    // Day Selector
+    dayLabel: 'Day',
+    allDays: 'All Days',
+    selectDay: 'Select Day',
   },
 };

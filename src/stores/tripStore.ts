@@ -26,6 +26,7 @@ interface TripState {
   isLoadingHotels: boolean;
   isMobileMapView: boolean;
   showTripDetailsModal: boolean;
+  selectedDay: number; // Currently selected day for multi-day view
 
   setSearchParams: (params: Partial<TripSearchParams>) => void;
   search: () => Promise<void>;
@@ -42,6 +43,7 @@ interface TripState {
   toggleMobileView: () => void;
   openTripDetailsModal: () => void;
   closeTripDetailsModal: () => void;
+  setSelectedDay: (day: number) => void;
   reset: () => void;
 }
 
@@ -64,6 +66,7 @@ export const useTripStore = create<TripState>((set, get) => ({
   isLoadingHotels: false,
   isMobileMapView: false,
   showTripDetailsModal: false,
+  selectedDay: 1,
 
   setSearchParams: (params) =>
     set((state) => ({
@@ -113,6 +116,7 @@ export const useTripStore = create<TripState>((set, get) => ({
       isLoadingItinerary: true,
       isMobileMapView: false,
       showTripDetailsModal: false,
+      selectedDay: 1,
     });
 
     try {
@@ -121,7 +125,8 @@ export const useTripStore = create<TripState>((set, get) => ({
         searchParams.destination,
         route.name,
         language,
-        searchParams.travelMode
+        searchParams.travelMode,
+        1 // Default to 1 night for quick view
       );
       set({ itinerary: items });
     } catch (error) {
@@ -147,6 +152,7 @@ export const useTripStore = create<TripState>((set, get) => ({
       isLoadingHotels: true,
       isMobileMapView: false,
       showTripDetailsModal: false,
+      selectedDay: 1,
     }));
 
     try {
@@ -157,7 +163,8 @@ export const useTripStore = create<TripState>((set, get) => ({
           searchParams.destination,
           route.name,
           language,
-          searchParams.travelMode
+          searchParams.travelMode,
+          nights
         ),
         fetchHotelRecommendations(
           searchParams.destination,
@@ -184,7 +191,8 @@ export const useTripStore = create<TripState>((set, get) => ({
     }
   },
 
-  backToRoutes: () => set({ itinerary: [], hotels: [], selectedRoute: null, navigationPath: null }),
+  backToRoutes: () =>
+    set({ itinerary: [], hotels: [], selectedRoute: null, navigationPath: null, selectedDay: 1 }),
   backToSearch: () =>
     set({
       routes: [],
@@ -192,10 +200,12 @@ export const useTripStore = create<TripState>((set, get) => ({
       itinerary: [],
       hotels: [],
       navigationPath: null,
+      selectedDay: 1,
     }),
   toggleMobileView: () => set((state) => ({ isMobileMapView: !state.isMobileMapView })),
   openTripDetailsModal: () => set({ showTripDetailsModal: true }),
   closeTripDetailsModal: () => set({ showTripDetailsModal: false }),
+  setSelectedDay: (day) => set({ selectedDay: day }),
   reset: () =>
     set({
       searchParams: initialSearchParams,
@@ -209,5 +219,6 @@ export const useTripStore = create<TripState>((set, get) => ({
       isLoadingHotels: false,
       isMobileMapView: false,
       showTripDetailsModal: false,
+      selectedDay: 1,
     }),
 }));

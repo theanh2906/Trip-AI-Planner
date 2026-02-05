@@ -66,6 +66,7 @@ export enum StopType {
 }
 
 export interface TimelineItem {
+  day: number; // Day number (1, 2, 3, ...)
   time: string;
   title: string;
   description: string;
