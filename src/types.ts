@@ -33,6 +33,11 @@ export interface HotelBudget {
   max: number; // VNĐ per night
 }
 
+export interface Travelers {
+  adults: number; // >= 1
+  children: number; // >= 0
+}
+
 export interface TripSearchParams {
   origin: string;
   destination: string;
@@ -43,6 +48,7 @@ export interface TripSearchParams {
   departureDate?: string; // ISO date: "2026-02-15"
   nights?: number; // 1-30
   hotelBudget?: HotelBudget;
+  travelers?: Travelers;
 }
 
 export interface RouteOption {
@@ -65,6 +71,18 @@ export enum StopType {
   TRANSIT = 'TRANSIT',
 }
 
+// Alternative option for a stop (e.g., different restaurant or attraction)
+export interface AlternativeOption {
+  title: string;
+  description: string;
+  costPerAdult: number; // VNĐ
+  costPerChild: number; // VNĐ
+  rating?: string;
+  locationName: string;
+  coordinates?: Coordinates;
+  imageUrl?: string;
+}
+
 export interface TimelineItem {
   day: number; // Day number (1, 2, 3, ...)
   time: string;
@@ -77,7 +95,25 @@ export interface TimelineItem {
   imageUrl?: string;
   duration?: string;
   estimatedCost?: { min: number; max: number };
+  costPerAdult?: number; // VNĐ - AI estimated cost per adult
+  costPerChild?: number; // VNĐ - AI estimated cost per child (typically 50-70% of adult)
   tips?: string[];
+  alternatives?: AlternativeOption[]; // 2-3 alternative options for FOOD/SIGHTSEEING
+}
+
+// Flight ticket option
+export interface FlightOption {
+  id: string;
+  airline: string;
+  flightNumber: string;
+  departureTime: string; // "07:30"
+  arrivalTime: string; // "09:45"
+  duration: string; // "2h 15m"
+  stops: number; // 0 = direct, 1 = 1 stop, etc.
+  stopDescription?: string; // "Via Bangkok" or ""
+  pricePerAdult: number; // VNĐ
+  pricePerChild: number; // VNĐ
+  cabinClass: string; // "Economy", "Business"
 }
 
 export interface HotelRecommendation {

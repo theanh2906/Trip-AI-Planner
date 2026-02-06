@@ -381,6 +381,15 @@ QUAN TRỌNG:
 - Cung cấp tọa độ latitude và longitude gần đúng cho MỖI điểm dừng.
 - MỖI item PHẢI có field "day" (số nguyên: 1, 2, 3...).
 - Cung cấp khoảng ${totalItems} mục (khoảng ${itemsPerDay} mục mỗi ngày).
+- MỖI item PHẢI có "costPerAdult" (chi phí ước tính VNĐ cho 1 người lớn) và "costPerChild" (chi phí cho 1 trẻ em, thường 50-70% người lớn).
+  + Với nhà hàng/quán ăn (FOOD): giá trung bình 1 bữa ăn/người tại nhà hàng đó.
+  + Với điểm tham quan (SIGHTSEEING): giá vé vào cổng/người. Nếu miễn phí thì = 0.
+  + Với điểm chụp ảnh (PHOTO_OP): giá vé nếu có, không thì = 0.
+  + Với các loại khác (REST, DEPARTURE, ARRIVAL, TRANSIT, HOTEL): costPerAdult = 0, costPerChild = 0.
+- Với mỗi item FOOD hoặc SIGHTSEEING, PHẢI cung cấp "alternatives": mảng 2 lựa chọn thay thế.
+  + Mỗi alternative cần: title, description, costPerAdult, costPerChild, rating, locationName, coordinates.
+  + Alternatives phải ở cùng khu vực và cùng loại (nhà hàng thay nhà hàng, điểm tham quan thay điểm tham quan).
+  + Với các loại khác, alternatives = mảng rỗng [].
 
 Tập trung vào các địa điểm phổ biến, được đánh giá cao tại ${regionContext}.
 Bao gồm ẩm thực địa phương và điểm tham quan văn hóa đặc trưng của khu vực này.
@@ -391,6 +400,15 @@ IMPORTANT:
 - Provide approximate latitude and longitude coordinates for EACH stop.
 - Each item MUST have a "day" field (integer: 1, 2, 3...).
 - Provide about ${totalItems} items (approximately ${itemsPerDay} items per day).
+- Each item MUST have "costPerAdult" (estimated VNĐ cost per adult) and "costPerChild" (cost per child, typically 50-70% of adult).
+  + For restaurants/food (FOOD): average meal price per person at that restaurant.
+  + For sightseeing (SIGHTSEEING): entrance ticket price per person. If free, set to 0.
+  + For photo spots (PHOTO_OP): ticket price if any, otherwise 0.
+  + For other types (REST, DEPARTURE, ARRIVAL, TRANSIT, HOTEL): costPerAdult = 0, costPerChild = 0.
+- For each FOOD or SIGHTSEEING item, MUST provide "alternatives": array of 2 alternative options.
+  + Each alternative needs: title, description, costPerAdult, costPerChild, rating, locationName, coordinates.
+  + Alternatives must be in the same area and same type (restaurant for restaurant, attraction for attraction).
+  + For other types, alternatives = empty array [].
 
 Focus on popular, highly-rated locations in ${regionContext}.
 Include local cuisine and cultural attractions specific to this area.
@@ -469,6 +487,62 @@ Requirements:
 - Total price = price per night × ${nights} nights
 - Focus on highly-rated hotels popular with travelers
 - Provide approximate coordinates for each hotel
+
+${langInstruction}
+`.trim();
+};
+
+// ============================================================================
+// FLIGHT OPTIONS PROMPT
+// ============================================================================
+
+export interface FlightPromptParams {
+  origin: string;
+  destination: string;
+  departureDate: string;
+  returnDate?: string;
+  lang: Language;
+}
+
+export const buildFlightPrompt = (params: FlightPromptParams): string => {
+  const { origin, destination, departureDate, returnDate, lang } = params;
+  const langInstruction = getLangInstruction(lang);
+  const isVi = lang === 'vi';
+
+  const returnInfo = returnDate
+    ? isVi
+      ? `Ngày về: ${returnDate}`
+      : `Return date: ${returnDate}`
+    : '';
+
+  if (isVi) {
+    return `
+Gợi ý 4-5 chuyến bay từ ${origin} đến ${destination}.
+Ngày đi: ${departureDate}
+${returnInfo}
+
+Yêu cầu:
+- Gợi ý nhiều lựa chọn: bay thẳng, 1 điểm dừng, hãng giá rẻ, hãng cao cấp
+- Mỗi chuyến bay cần: hãng hàng không, số hiệu chuyến bay, giờ khởi hành, giờ đến, thời gian bay, số điểm dừng, mô tả điểm dừng (nếu có)
+- Giá vé ước tính cho người lớn và trẻ em (VNĐ)
+- Hạng ghế (Economy hoặc Business)
+- Sắp xếp từ rẻ nhất đến đắt nhất
+
+${langInstruction}
+`.trim();
+  }
+
+  return `
+Suggest 4-5 flight options from ${origin} to ${destination}.
+Departure date: ${departureDate}
+${returnInfo}
+
+Requirements:
+- Include varied options: direct flights, 1-stop flights, budget airlines, premium airlines
+- Each flight needs: airline, flight number, departure time, arrival time, duration, number of stops, stop description (if any)
+- Estimated ticket price for adult and child (VNĐ)
+- Cabin class (Economy or Business)
+- Sort from cheapest to most expensive
 
 ${langInstruction}
 `.trim();

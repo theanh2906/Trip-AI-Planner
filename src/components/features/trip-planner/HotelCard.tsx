@@ -1,7 +1,10 @@
 import React from 'react';
-import { Star, MapPin, Wifi, Coffee, Car, Waves } from 'lucide-react';
+import { Star, MapPin, Wifi, Coffee, Car, Waves, Check } from 'lucide-react';
 import { HotelRecommendation } from '../../../types';
 import { cn } from '../../../lib/utils';
+import { useTripStore } from '../../../stores/tripStore';
+import { translations } from '../../../utils/i18n';
+import { useAppStore } from '../../../stores/appStore';
 
 // Format VNĐ with proper formatting
 const formatVND = (amount: number): string => {
@@ -40,11 +43,17 @@ interface HotelCardProps {
 const HotelCard: React.FC<HotelCardProps> = ({ hotel, nights, language, className }) => {
   const nightLabel = language === 'vi' ? 'đêm' : nights === 1 ? 'night' : 'nights';
   const perNightLabel = language === 'vi' ? '/đêm' : '/night';
+  const { selectedHotel, setSelectedHotel, searchParams } = useTripStore();
+  const { language: appLang } = useAppStore();
+  const t = translations[appLang];
+  const isSelected = selectedHotel?.id === hotel.id;
+  const hasTravelers = !!searchParams?.travelers;
 
   return (
     <div
       className={cn(
-        'flex-shrink-0 w-64 bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow',
+        'flex-shrink-0 w-64 bg-white rounded-xl border shadow-sm overflow-hidden hover:shadow-md transition-all',
+        isSelected ? 'border-emerald-300 ring-2 ring-emerald-200' : 'border-slate-100',
         className
       )}
     >
@@ -108,6 +117,31 @@ const HotelCard: React.FC<HotelCardProps> = ({ hotel, nights, language, classNam
             💰 {language === 'vi' ? 'Tổng' : 'Total'} {nights} {nightLabel}:{' '}
             <span className="font-semibold text-slate-700">{formatVND(hotel.totalPrice)}</span>
           </div>
+
+          {/* Select Hotel Button */}
+          {hasTravelers && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedHotel(isSelected ? null : hotel);
+              }}
+              className={cn(
+                'w-full mt-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5',
+                isSelected
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600'
+              )}
+            >
+              {isSelected ? (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  {t.selectedHotel}
+                </>
+              ) : (
+                t.selectHotel
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>

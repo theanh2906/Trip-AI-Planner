@@ -11,11 +11,13 @@ import {
   Language,
   TravelMode,
   HotelRecommendation,
+  FlightOption,
 } from '../types';
 import {
   buildRouteOptionsPrompt,
   buildItineraryPrompt,
   buildHotelPrompt,
+  buildFlightPrompt,
   getFallbackRouteMessage,
   detectRegion,
   requiresFlying,
@@ -68,6 +70,27 @@ const routeOptionsSchema = {
   },
 };
 
+const alternativeSchema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING, description: 'Name of the alternative place' },
+    description: { type: Type.STRING, description: 'Short description' },
+    costPerAdult: { type: Type.NUMBER, description: 'Cost per adult in VNĐ' },
+    costPerChild: { type: Type.NUMBER, description: 'Cost per child in VNĐ' },
+    rating: { type: Type.STRING, description: 'Rating (e.g. 4.5/5)' },
+    locationName: { type: Type.STRING, description: 'Location name' },
+    coordinates: {
+      type: Type.OBJECT,
+      properties: {
+        lat: { type: Type.NUMBER },
+        lng: { type: Type.NUMBER },
+      },
+      required: ['lat', 'lng'],
+    },
+  },
+  required: ['title', 'description', 'costPerAdult', 'costPerChild', 'locationName'],
+};
+
 const itinerarySchema = {
   type: Type.ARRAY,
   items: {
@@ -95,6 +118,19 @@ const itinerarySchema = {
       },
       locationName: { type: Type.STRING, description: 'City or specific address area' },
       rating: { type: Type.STRING, description: 'Rating out of 5 (e.g. 4.7/5)' },
+      costPerAdult: {
+        type: Type.NUMBER,
+        description: 'Estimated cost per adult in VNĐ (0 if free or not applicable)',
+      },
+      costPerChild: {
+        type: Type.NUMBER,
+        description: 'Estimated cost per child in VNĐ (typically 50-70% of adult, 0 if free)',
+      },
+      alternatives: {
+        type: Type.ARRAY,
+        items: alternativeSchema,
+        description: '2 alternative options for FOOD/SIGHTSEEING items, empty for others',
+      },
       coordinates: {
         type: Type.OBJECT,
         properties: {
@@ -104,7 +140,18 @@ const itinerarySchema = {
         required: ['lat', 'lng'],
       },
     },
-    required: ['day', 'time', 'title', 'description', 'type', 'locationName', 'coordinates'],
+    required: [
+      'day',
+      'time',
+      'title',
+      'description',
+      'type',
+      'locationName',
+      'coordinates',
+      'costPerAdult',
+      'costPerChild',
+      'alternatives',
+    ],
   },
 };
 
@@ -143,6 +190,41 @@ const hotelSchema = {
       'description',
       'amenities',
       'location',
+    ],
+  },
+};
+
+const flightSchema = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      id: { type: Type.STRING },
+      airline: { type: Type.STRING, description: 'Airline name (e.g. Vietnam Airlines)' },
+      flightNumber: { type: Type.STRING, description: 'Flight number (e.g. VN123)' },
+      departureTime: { type: Type.STRING, description: 'Departure time (e.g. 07:30)' },
+      arrivalTime: { type: Type.STRING, description: 'Arrival time (e.g. 09:45)' },
+      duration: { type: Type.STRING, description: 'Flight duration (e.g. 2h 15m)' },
+      stops: { type: Type.NUMBER, description: 'Number of stops (0 = direct)' },
+      stopDescription: {
+        type: Type.STRING,
+        description: 'Stop description if any (e.g. Via Bangkok)',
+      },
+      pricePerAdult: { type: Type.NUMBER, description: 'Ticket price per adult in VNĐ' },
+      pricePerChild: { type: Type.NUMBER, description: 'Ticket price per child in VNĐ' },
+      cabinClass: { type: Type.STRING, description: 'Cabin class (Economy or Business)' },
+    },
+    required: [
+      'id',
+      'airline',
+      'flightNumber',
+      'departureTime',
+      'arrivalTime',
+      'duration',
+      'stops',
+      'pricePerAdult',
+      'pricePerChild',
+      'cabinClass',
     ],
   },
 };
@@ -214,11 +296,15 @@ export const fetchItinerary = async (
 
     if (response.text) {
       const items = JSON.parse(response.text) as TimelineItem[];
-      // Add images to each item, ensure day defaults to 1 if not provided
+      // Add images to each item + alternatives, ensure day defaults to 1
       return items.map((item) => ({
         ...item,
         day: item.day || 1,
         imageUrl: getLocationImage(item.title, item.locationName, region),
+        alternatives: (item.alternatives || []).map((alt) => ({
+          ...alt,
+          imageUrl: getLocationImage(alt.title, alt.locationName, region),
+        })),
       }));
     }
     return [];
@@ -259,7 +345,6 @@ export const fetchHotelRecommendations = async (
     if (response.text) {
       const hotels = JSON.parse(response.text) as HotelRecommendation[];
       console.log('Hotels:', hotels);
-      // Add images to each hotel
       return hotels.map((hotel) => ({
         ...hotel,
         imageUrl: getLocationImage(hotel.name, destination, region),
@@ -268,6 +353,37 @@ export const fetchHotelRecommendations = async (
     return [];
   } catch (error) {
     console.error('Error fetching hotels:', error);
+    return [];
+  }
+};
+
+export const fetchFlightOptions = async (
+  origin: string,
+  destination: string,
+  departureDate: string,
+  lang: Language,
+  returnDate?: string
+): Promise<FlightOption[]> => {
+  const prompt = buildFlightPrompt({ origin, destination, departureDate, returnDate, lang });
+
+  try {
+    const response = await ai.models.generateContent({
+      model: MODEL_NAME,
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: flightSchema,
+      },
+    });
+
+    if (response.text) {
+      const flights = JSON.parse(response.text) as FlightOption[];
+      console.log('Flights:', flights);
+      return flights;
+    }
+    return [];
+  } catch (error) {
+    console.error('Error fetching flights:', error);
     return [];
   }
 };

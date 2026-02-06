@@ -6,12 +6,16 @@ import {
   TripSearchParams,
   HotelRecommendation,
   HotelBudget,
+  Travelers,
+  FlightOption,
 } from '../types';
 import {
   fetchRouteOptions,
   fetchItinerary,
   fetchHotelRecommendations,
+  fetchFlightOptions,
 } from '../services/geminiService';
+import { requiresFlying } from '../services/promptService';
 import { useAppStore } from './appStore';
 
 interface TripState {
@@ -20,13 +24,20 @@ interface TripState {
   selectedRoute: RouteOption | null;
   itinerary: TimelineItem[];
   hotels: HotelRecommendation[];
+  flights: FlightOption[];
   navigationPath: [TimelineItem, TimelineItem] | null;
   isLoadingRoutes: boolean;
   isLoadingItinerary: boolean;
   isLoadingHotels: boolean;
+  isLoadingFlights: boolean;
   isMobileMapView: boolean;
   showTripDetailsModal: boolean;
-  selectedDay: number; // Currently selected day for multi-day view
+  selectedDay: number;
+  // Cost estimation
+  selectedCostItems: Set<number>;
+  selectedHotel: HotelRecommendation | null;
+  selectedFlight: FlightOption | null;
+  selectedAlternatives: Record<number, number>; // itinerary index → alternative index (-1 = default)
 
   setSearchParams: (params: Partial<TripSearchParams>) => void;
   search: () => Promise<void>;
@@ -35,7 +46,8 @@ interface TripState {
     route: RouteOption,
     departureDate: string,
     nights: number,
-    hotelBudget: HotelBudget
+    hotelBudget: HotelBudget,
+    travelers: Travelers
   ) => Promise<void>;
   navigateTo: (item: TimelineItem) => void;
   backToRoutes: () => void;
@@ -44,6 +56,10 @@ interface TripState {
   openTripDetailsModal: () => void;
   closeTripDetailsModal: () => void;
   setSelectedDay: (day: number) => void;
+  toggleCostItem: (index: number) => void;
+  setSelectedHotel: (hotel: HotelRecommendation | null) => void;
+  setSelectedFlight: (flight: FlightOption | null) => void;
+  setSelectedAlternative: (itemIndex: number, altIndex: number) => void;
   reset: () => void;
 }
 
@@ -54,19 +70,29 @@ const initialSearchParams: TripSearchParams = {
   tripStyles: [],
 };
 
+const initialCostState = {
+  selectedCostItems: new Set<number>(),
+  selectedHotel: null as HotelRecommendation | null,
+  selectedFlight: null as FlightOption | null,
+  selectedAlternatives: {} as Record<number, number>,
+};
+
 export const useTripStore = create<TripState>((set, get) => ({
   searchParams: initialSearchParams,
   routes: [],
   selectedRoute: null,
   itinerary: [],
   hotels: [],
+  flights: [],
   navigationPath: null,
   isLoadingRoutes: false,
   isLoadingItinerary: false,
   isLoadingHotels: false,
+  isLoadingFlights: false,
   isMobileMapView: false,
   showTripDetailsModal: false,
   selectedDay: 1,
+  ...initialCostState,
 
   setSearchParams: (params) =>
     set((state) => ({
@@ -87,6 +113,7 @@ export const useTripStore = create<TripState>((set, get) => ({
       selectedRoute: null,
       itinerary: [],
       hotels: [],
+      flights: [],
       navigationPath: null,
     });
 
@@ -126,7 +153,7 @@ export const useTripStore = create<TripState>((set, get) => ({
         route.name,
         language,
         searchParams.travelMode,
-        1 // Default to 1 night for quick view
+        1
       );
       set({ itinerary: items });
     } catch (error) {
@@ -136,28 +163,42 @@ export const useTripStore = create<TripState>((set, get) => ({
     }
   },
 
-  selectRouteWithDetails: async (route, departureDate, nights, hotelBudget) => {
+  selectRouteWithDetails: async (route, departureDate, nights, hotelBudget, travelers) => {
     const { searchParams } = get();
     if (!searchParams) return;
 
     const language = useAppStore.getState().language;
 
-    // Update search params with hotel details
+    // Determine if we need flights
+    const needsFlights =
+      searchParams.travelMode === TravelMode.PLANE ||
+      requiresFlying(searchParams.origin, searchParams.destination);
+
+    // Update search params
     set((state) => ({
       searchParams: state.searchParams
-        ? { ...state.searchParams, departureDate, nights, hotelBudget }
-        : { ...initialSearchParams, departureDate, nights, hotelBudget },
+        ? { ...state.searchParams, departureDate, nights, hotelBudget, travelers }
+        : { ...initialSearchParams, departureDate, nights, hotelBudget, travelers },
       selectedRoute: route,
       isLoadingItinerary: true,
       isLoadingHotels: true,
+      isLoadingFlights: needsFlights,
       isMobileMapView: false,
       showTripDetailsModal: false,
       selectedDay: 1,
+      ...initialCostState,
     }));
 
+    // Calculate return date for flights
+    const returnDate = new Date(
+      new Date(departureDate).getTime() + (nights + 1) * 24 * 60 * 60 * 1000
+    )
+      .toISOString()
+      .split('T')[0];
+
     try {
-      // Fetch itinerary and hotels in parallel
-      const [items, hotelResults] = await Promise.all([
+      // Build parallel fetch promises
+      const promises: Promise<unknown>[] = [
         fetchItinerary(
           searchParams.origin,
           searchParams.destination,
@@ -174,13 +215,31 @@ export const useTripStore = create<TripState>((set, get) => ({
           language,
           searchParams.tripStyles
         ),
-      ]);
+      ];
 
-      set({ itinerary: items, hotels: hotelResults });
+      // Add flight fetch if needed
+      if (needsFlights) {
+        promises.push(
+          fetchFlightOptions(
+            searchParams.origin,
+            searchParams.destination,
+            departureDate,
+            language,
+            returnDate
+          )
+        );
+      }
+
+      const results = await Promise.all(promises);
+      const items = results[0] as TimelineItem[];
+      const hotelResults = results[1] as HotelRecommendation[];
+      const flightResults = needsFlights ? (results[2] as FlightOption[]) : [];
+
+      set({ itinerary: items, hotels: hotelResults, flights: flightResults });
     } catch (error) {
-      console.error('Failed to fetch itinerary or hotels:', error);
+      console.error('Failed to fetch trip data:', error);
     } finally {
-      set({ isLoadingItinerary: false, isLoadingHotels: false });
+      set({ isLoadingItinerary: false, isLoadingHotels: false, isLoadingFlights: false });
     }
   },
 
@@ -192,20 +251,46 @@ export const useTripStore = create<TripState>((set, get) => ({
   },
 
   backToRoutes: () =>
-    set({ itinerary: [], hotels: [], selectedRoute: null, navigationPath: null, selectedDay: 1 }),
+    set({
+      itinerary: [],
+      hotels: [],
+      flights: [],
+      selectedRoute: null,
+      navigationPath: null,
+      selectedDay: 1,
+      ...initialCostState,
+    }),
   backToSearch: () =>
     set({
       routes: [],
       selectedRoute: null,
       itinerary: [],
       hotels: [],
+      flights: [],
       navigationPath: null,
       selectedDay: 1,
+      ...initialCostState,
     }),
   toggleMobileView: () => set((state) => ({ isMobileMapView: !state.isMobileMapView })),
   openTripDetailsModal: () => set({ showTripDetailsModal: true }),
   closeTripDetailsModal: () => set({ showTripDetailsModal: false }),
   setSelectedDay: (day) => set({ selectedDay: day }),
+  toggleCostItem: (index) =>
+    set((state) => {
+      const newSet = new Set(state.selectedCostItems);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return { selectedCostItems: newSet };
+    }),
+  setSelectedHotel: (hotel) => set({ selectedHotel: hotel }),
+  setSelectedFlight: (flight) => set({ selectedFlight: flight }),
+  setSelectedAlternative: (itemIndex, altIndex) =>
+    set((state) => ({
+      selectedAlternatives: { ...state.selectedAlternatives, [itemIndex]: altIndex },
+    })),
   reset: () =>
     set({
       searchParams: initialSearchParams,
@@ -213,12 +298,15 @@ export const useTripStore = create<TripState>((set, get) => ({
       selectedRoute: null,
       itinerary: [],
       hotels: [],
+      flights: [],
       navigationPath: null,
       isLoadingRoutes: false,
       isLoadingItinerary: false,
       isLoadingHotels: false,
+      isLoadingFlights: false,
       isMobileMapView: false,
       showTripDetailsModal: false,
       selectedDay: 1,
+      ...initialCostState,
     }),
 }));

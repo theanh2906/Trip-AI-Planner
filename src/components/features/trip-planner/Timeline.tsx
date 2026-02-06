@@ -12,13 +12,34 @@ import {
   ChevronRight,
   ChevronDown,
   Calendar,
+  CirclePlus,
+  CircleCheck,
 } from 'lucide-react';
 import { translations } from '../../../utils/i18n';
 import { useAppStore } from '../../../stores/appStore';
 import { useTripStore } from '../../../stores/tripStore';
-import { TimelineItem } from '../../../types';
+import { TimelineItem, StopType } from '../../../types';
 import { cn } from '../../../lib/utils';
 import HotelSection from './HotelSection';
+import CostSummary from './CostSummary';
+import FlightSection from './FlightSection';
+
+// Format VNĐ compact
+const formatVND = (amount: number): string => {
+  if (amount >= 1000000) {
+    return `${(amount / 1000000).toFixed(1).replace('.0', '')}tr`;
+  }
+  if (amount >= 1000) {
+    return `${(amount / 1000).toFixed(0)}k`;
+  }
+  return `${amount}`;
+};
+
+// Types that have costs (food, sightseeing, photo spots)
+const COSTABLE_TYPES = new Set([StopType.FOOD, StopType.SIGHTSEEING, StopType.PHOTO_OP]);
+
+// Types that have alternatives
+const ALTERNATIVE_TYPES = new Set([StopType.FOOD, StopType.SIGHTSEEING]);
 
 const Timeline: React.FC = () => {
   const { language } = useAppStore();
@@ -32,6 +53,11 @@ const Timeline: React.FC = () => {
     selectedDay,
     setSelectedDay,
     searchParams,
+    selectedCostItems,
+    toggleCostItem,
+    selectedAlternatives,
+    setSelectedAlternative,
+    flights,
   } = useTripStore();
   const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -51,6 +77,7 @@ const Timeline: React.FC = () => {
 
   // Check if multi-day trip
   const isMultiDay = availableDays.length > 1;
+  const hasTravelers = !!searchParams?.travelers;
 
   if (!selectedRoute || itinerary.length === 0) return null;
 
@@ -171,57 +198,192 @@ const Timeline: React.FC = () => {
           )}
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-slate-50 pb-24 md:pb-6">
+          {/* Flight Section - only show if flights available */}
+          {flights.length > 0 && selectedDay === 1 && <FlightSection />}
+
           <div className="relative pl-6 border-l-2 border-slate-200 space-y-8 pb-10">
-            {filteredItinerary.map((item, index) => (
-              <div key={index} className="relative group">
-                <div
-                  className={cn(
-                    'absolute -left-[33px] top-0 w-10 h-10 rounded-full border-4 border-slate-50 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform',
-                    getCategoryColor(item.type)
-                  )}
-                >
-                  <CategoryIcon type={item.type} className="w-5 h-5 text-white" />
-                </div>
-                <div
-                  onClick={() => {
-                    setSelectedItem(item);
-                    navigateTo(item);
-                  }}
-                  className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 ml-4 cursor-pointer hover:shadow-lg hover:border-blue-200 transition-all hover:-translate-y-1"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600">
-                      {item.time}
-                    </span>
-                    {item.rating && (
-                      <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
-                        <Star className="w-3 h-3 fill-current" />
-                        {item.rating}
+            {filteredItinerary.map((item, index) => {
+              // Find the global index in full itinerary for cost/alternatives tracking
+              const globalIndex = itinerary.findIndex(
+                (i) => i.day === item.day && i.time === item.time && i.title === item.title
+              );
+              const hasCost = COSTABLE_TYPES.has(item.type) && (item.costPerAdult || 0) > 0;
+              const isCostSelected = selectedCostItems.has(globalIndex);
+              const hasAlts =
+                ALTERNATIVE_TYPES.has(item.type) &&
+                item.alternatives &&
+                item.alternatives.length > 0;
+              const activeAltIdx = selectedAlternatives[globalIndex] ?? -1;
+
+              // Get display data: either the default item or the selected alternative
+              const activeAlt =
+                activeAltIdx >= 0 && item.alternatives?.[activeAltIdx]
+                  ? item.alternatives[activeAltIdx]
+                  : null;
+              const displayTitle = activeAlt?.title || item.title;
+              const displayDesc = activeAlt?.description || item.description;
+              const displayLocation = activeAlt?.locationName || item.locationName;
+              const displayRating = activeAlt?.rating || item.rating;
+              const displayImage = activeAlt?.imageUrl || item.imageUrl;
+              const displayCostAdult = activeAlt?.costPerAdult ?? item.costPerAdult ?? 0;
+              const displayCostChild = activeAlt?.costPerChild ?? item.costPerChild ?? 0;
+              const displayHasCost = hasCost || (activeAlt && displayCostAdult > 0);
+
+              return (
+                <div key={index} className="relative group">
+                  <div
+                    className={cn(
+                      'absolute -left-[33px] top-0 w-10 h-10 rounded-full border-4 border-slate-50 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform',
+                      getCategoryColor(item.type)
+                    )}
+                  >
+                    <CategoryIcon type={item.type} className="w-5 h-5 text-white" />
+                  </div>
+                  <div
+                    onClick={() => {
+                      setSelectedItem(item);
+                      navigateTo(item);
+                    }}
+                    className={cn(
+                      'bg-white rounded-xl shadow-sm border p-4 ml-4 cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1',
+                      isCostSelected
+                        ? 'border-emerald-300 ring-1 ring-emerald-200'
+                        : 'border-slate-200 hover:border-blue-200'
+                    )}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600">
+                        {item.time}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {displayRating && (
+                          <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
+                            <Star className="w-3 h-3 fill-current" />
+                            {displayRating}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-slate-200">
+                        <img
+                          src={displayImage}
+                          alt={displayTitle}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-bold text-slate-800 truncate mb-1">
+                          {displayTitle}
+                        </h3>
+                        <div className="flex items-center gap-1 text-slate-500 text-xs mb-2">
+                          <MapPin className="w-3 h-3" />
+                          <span className="truncate">{displayLocation}</span>
+                        </div>
+                        <p className="text-sm text-slate-600 line-clamp-2">{displayDesc}</p>
+                      </div>
+                    </div>
+
+                    {/* Alternatives selector */}
+                    {hasAlts && hasTravelers && (
+                      <div className="mt-3 pt-3 border-t border-slate-100">
+                        <p className="text-xs text-slate-400 mb-2">{t.otherOptions}:</p>
+                        <div className="flex gap-2 overflow-x-auto pb-1">
+                          {/* Default option chip */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedAlternative(globalIndex, -1);
+                            }}
+                            className={cn(
+                              'flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                              activeAltIdx === -1
+                                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                            )}
+                          >
+                            {item.title.length > 18
+                              ? item.title.substring(0, 18) + '...'
+                              : item.title}
+                            {(item.costPerAdult || 0) > 0 && (
+                              <span className="ml-1 text-slate-400">
+                                ~{formatVND(item.costPerAdult || 0)}
+                              </span>
+                            )}
+                          </button>
+                          {/* Alternative option chips */}
+                          {item.alternatives?.map((alt, altIdx) => (
+                            <button
+                              key={altIdx}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedAlternative(globalIndex, altIdx);
+                              }}
+                              className={cn(
+                                'flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                                activeAltIdx === altIdx
+                                  ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                  : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                              )}
+                            >
+                              {alt.title.length > 18
+                                ? alt.title.substring(0, 18) + '...'
+                                : alt.title}
+                              {alt.costPerAdult > 0 && (
+                                <span className="ml-1 text-slate-400">
+                                  ~{formatVND(alt.costPerAdult)}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cost toggle row */}
+                    {displayHasCost && hasTravelers && (
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-500">
+                            ~{formatVND(displayCostAdult)}
+                            {t.perPerson}
+                          </span>
+                          {displayCostChild > 0 && (
+                            <span className="text-xs text-slate-400">
+                              ({t.child}: {formatVND(displayCostChild)})
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleCostItem(globalIndex);
+                          }}
+                          className={cn(
+                            'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all',
+                            isCostSelected
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200'
+                          )}
+                        >
+                          {isCostSelected ? (
+                            <>
+                              <CircleCheck className="w-3.5 h-3.5" />
+                              {t.removeFromCost}
+                            </>
+                          ) : (
+                            <>
+                              <CirclePlus className="w-3.5 h-3.5" />
+                              {t.addToCost}
+                            </>
+                          )}
+                        </button>
                       </div>
                     )}
                   </div>
-                  <div className="flex gap-4">
-                    <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-slate-200">
-                      <img
-                        src={item.imageUrl}
-                        alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-slate-800 truncate mb-1">
-                        {item.title}
-                      </h3>
-                      <div className="flex items-center gap-1 text-slate-500 text-xs mb-2">
-                        <MapPin className="w-3 h-3" />
-                        <span className="truncate">{item.locationName}</span>
-                      </div>
-                      <p className="text-sm text-slate-600 line-clamp-2">{item.description}</p>
-                    </div>
-                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             <div className="relative">
               <div className="absolute -left-[29px] top-0 w-8 h-8 rounded-full bg-slate-800 border-4 border-slate-50 flex items-center justify-center shadow-md">
                 <div className="w-2 h-2 bg-white rounded-full"></div>
@@ -237,6 +399,9 @@ const Timeline: React.FC = () => {
           {/* Hotel Recommendations Section */}
           <HotelSection />
         </div>
+        {/* Floating Cost Summary */}
+        {searchParams?.travelers && <CostSummary />}
+
         {selectedItem && (
           <div className="absolute inset-0 z-50 bg-white animate-fade-in flex flex-col">
             <div className="relative h-64 w-full flex-shrink-0">
