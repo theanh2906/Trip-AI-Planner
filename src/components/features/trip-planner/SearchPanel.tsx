@@ -240,6 +240,7 @@ const SearchPanel: React.FC = () => {
   // Handle place selection
   const handleSelectPlace = (place: Place, type: 'origin' | 'destination') => {
     const displayName = formatPlaceDisplay(place, language);
+    setIsSearching(false);
     if (type === 'origin') {
       setOrigin(place.name);
       setOriginCountry(place.countryCode);
@@ -303,6 +304,7 @@ const SearchPanel: React.FC = () => {
     if (!origin.trim() || !destination.trim()) return;
 
     setActiveInput(null);
+    setIsSearching(false);
     setSearchParams({
       origin,
       destination,
@@ -385,9 +387,6 @@ const SearchPanel: React.FC = () => {
             )}
           </div>
 
-          {/* Connector Line */}
-          <div className="absolute left-[39px] md:left-[39px] top-[calc(theme(spacing.16)+theme(spacing.5)+40px)] md:top-[calc(theme(spacing.5)+88px+40px)] w-[2px] h-4 bg-slate-200 z-0"></div>
-
           {/* Destination Input */}
           <div className="relative group">
             <div className="absolute left-3 top-3 text-slate-400 group-focus-within:text-red-500 transition-colors z-10">
@@ -415,7 +414,11 @@ const SearchPanel: React.FC = () => {
           <div>
             <button
               type="button"
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={() => {
+                setActiveInput(null);
+                setIsSearching(false);
+                setIsExpanded(!isExpanded);
+              }}
               className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
             >
               {isExpanded ? '− Ẩn tùy chọn' : '+ Tùy chọn nâng cao'}

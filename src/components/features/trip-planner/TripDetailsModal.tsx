@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Calendar, Moon, Wallet, X, ChevronRight, Users, Minus, Plus, Baby } from 'lucide-react';
+import { Moon, Wallet, X, ChevronRight, Users, Minus, Plus, Baby } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { translations } from '../../../utils/i18n';
 import { useAppStore } from '../../../stores/appStore';
 import { useTripStore } from '../../../stores/tripStore';
 import { RouteOption, HotelBudget } from '../../../types';
 import { cn } from '../../../lib/utils';
+import { DatePicker } from '../../ui/DatePicker';
 
 const NIGHT_OPTIONS = [1, 2, 3, 4, 5, 7, 14];
 
@@ -139,16 +140,11 @@ const TripDetailsModal: React.FC<TripDetailsModalProps> = ({ route }) => {
 
             {/* Departure Date — full width */}
             <div className="mb-5">
-              <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-2">
-                <Calendar className="w-3.5 h-3.5 text-blue-500" />
-                {t.departureDate}
-              </label>
-              <input
-                type="date"
+              <DatePicker
                 value={departureDate}
-                min={getTomorrow()}
-                onChange={(e) => setDepartureDate(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700 text-sm"
+                onChange={setDepartureDate}
+                minDate={getTomorrow()}
+                placeholder={t.selectDate}
               />
             </div>
 

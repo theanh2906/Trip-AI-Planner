@@ -96,6 +96,7 @@ export const translations = {
     // Alternatives
     otherOptions: 'Lựa chọn khác',
     option: 'Lựa chọn',
+    selectDate: 'Chọn ngày khởi hành',
   },
   en: {
     appTitle: 'TripAI',
@@ -192,5 +193,6 @@ export const translations = {
     // Alternatives
     otherOptions: 'Other options',
     option: 'Option',
+    selectDate: 'Select departure date',
   },
 };
