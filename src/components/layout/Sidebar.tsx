@@ -10,10 +10,12 @@ import {
   Bookmark,
   Settings,
   Globe,
+  DollarSign,
 } from 'lucide-react';
 import { useAppStore, FeatureType } from '../../stores/appStore';
 import { translations } from '../../utils/i18n';
 import { cn } from '../../lib/utils';
+import { Currency } from '../../types';
 
 interface NavItem {
   id: FeatureType;
@@ -31,8 +33,16 @@ const navItems: NavItem[] = [
 ];
 
 const Sidebar: React.FC = () => {
-  const { isSidebarOpen, setSidebarOpen, activeFeature, setActiveFeature, language, setLanguage } =
-    useAppStore();
+  const {
+    isSidebarOpen,
+    setSidebarOpen,
+    activeFeature,
+    setActiveFeature,
+    language,
+    setLanguage,
+    currency,
+    setCurrency,
+  } = useAppStore();
   const t = translations[language];
 
   useEffect(() => {
@@ -130,7 +140,7 @@ const Sidebar: React.FC = () => {
                 <span>{t.navSettings}</span>
               </button>
             </nav>
-            <div className="p-4 border-t border-slate-100">
+            <div className="p-4 border-t border-slate-100 space-y-2">
               <button
                 onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 font-medium text-slate-700"
@@ -139,6 +149,15 @@ const Sidebar: React.FC = () => {
                 <span>{language === 'vi' ? 'Tiếng Việt' : 'English'}</span>
                 <span className="text-slate-400">|</span>
                 <span className="text-slate-500">{language === 'vi' ? 'EN' : 'VN'}</span>
+              </button>
+              <button
+                onClick={() => setCurrency(currency === 'VND' ? 'USD' : 'VND')}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 font-medium text-slate-700"
+              >
+                <DollarSign className="w-4 h-4" />
+                <span>{currency === 'VND' ? 'VNĐ' : 'USD'}</span>
+                <span className="text-slate-400">|</span>
+                <span className="text-slate-500">{currency === 'VND' ? 'USD' : 'VNĐ'}</span>
               </button>
             </div>
           </motion.aside>

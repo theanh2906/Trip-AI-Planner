@@ -31,6 +31,7 @@
     "@types/adm-zip": "^0.5.7",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^22.14.0",
+    "@types/react": "^19.2.13",
     "@vitejs/plugin-react": "^5.0.0",
     "adm-zip": "^0.5.16",
     "autoprefixer": "^10.4.24",

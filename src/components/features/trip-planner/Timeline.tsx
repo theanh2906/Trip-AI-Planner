@@ -23,17 +23,7 @@ import { cn } from '../../../lib/utils';
 import HotelSection from './HotelSection';
 import CostSummary from './CostSummary';
 import FlightSection from './FlightSection';
-
-// Format VNĐ compact
-const formatVND = (amount: number): string => {
-  if (amount >= 1000000) {
-    return `${(amount / 1000000).toFixed(1).replace('.0', '')}tr`;
-  }
-  if (amount >= 1000) {
-    return `${(amount / 1000).toFixed(0)}k`;
-  }
-  return `${amount}`;
-};
+import { formatCurrencyCompact } from '../../../utils/currency';
 
 // Types that have costs (food, sightseeing, photo spots)
 const COSTABLE_TYPES = new Set([StopType.FOOD, StopType.SIGHTSEEING, StopType.PHOTO_OP]);
@@ -42,7 +32,7 @@ const COSTABLE_TYPES = new Set([StopType.FOOD, StopType.SIGHTSEEING, StopType.PH
 const ALTERNATIVE_TYPES = new Set([StopType.FOOD, StopType.SIGHTSEEING]);
 
 const Timeline: React.FC = () => {
-  const { language } = useAppStore();
+  const { language, currency } = useAppStore();
   const {
     itinerary,
     selectedRoute,
@@ -307,7 +297,7 @@ const Timeline: React.FC = () => {
                               : item.title}
                             {(item.costPerAdult || 0) > 0 && (
                               <span className="ml-1 text-slate-400">
-                                ~{formatVND(item.costPerAdult || 0)}
+                                ~{formatCurrencyCompact(item.costPerAdult || 0, currency)}
                               </span>
                             )}
                           </button>
@@ -331,7 +321,7 @@ const Timeline: React.FC = () => {
                                 : alt.title}
                               {alt.costPerAdult > 0 && (
                                 <span className="ml-1 text-slate-400">
-                                  ~{formatVND(alt.costPerAdult)}
+                                  ~{formatCurrencyCompact(alt.costPerAdult, currency)}
                                 </span>
                               )}
                             </button>
@@ -345,12 +335,12 @@ const Timeline: React.FC = () => {
                       <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-slate-500">
-                            ~{formatVND(displayCostAdult)}
+                            ~{formatCurrencyCompact(displayCostAdult, currency)}
                             {t.perPerson}
                           </span>
                           {displayCostChild > 0 && (
                             <span className="text-xs text-slate-400">
-                              ({t.child}: {formatVND(displayCostChild)})
+                              ({t.child}: {formatCurrencyCompact(displayCostChild, currency)})
                             </span>
                           )}
                         </div>

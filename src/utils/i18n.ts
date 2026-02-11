@@ -97,6 +97,10 @@ export const translations = {
     otherOptions: 'Lựa chọn khác',
     option: 'Lựa chọn',
     selectDate: 'Chọn ngày khởi hành',
+    // Currency
+    currency: 'Đơn vị tiền tệ',
+    currencyVND: 'VNĐ',
+    currencyUSD: 'USD',
   },
   en: {
     appTitle: 'TripAI',
@@ -194,5 +198,9 @@ export const translations = {
     otherOptions: 'Other options',
     option: 'Option',
     selectDate: 'Select departure date',
+    // Currency
+    currency: 'Currency',
+    currencyVND: 'VND',
+    currencyUSD: 'USD',
   },
 };

@@ -10,30 +10,14 @@ import {
   X,
 } from 'lucide-react';
 import { translations } from '../../../utils/i18n';
+import { formatCurrency, formatCurrencyCompact } from '../../../utils/currency';
 import { useAppStore } from '../../../stores/appStore';
 import { useTripStore } from '../../../stores/tripStore';
 import { StopType } from '../../../types';
 import { cn } from '../../../lib/utils';
 
-// Format VNĐ with proper formatting
-const formatVND = (amount: number): string => {
-  if (amount === 0) return '0₫';
-  return new Intl.NumberFormat('vi-VN').format(amount) + '₫';
-};
-
-// Compact VNĐ for smaller spaces
-const formatVNDCompact = (amount: number): string => {
-  if (amount >= 1000000) {
-    return `${(amount / 1000000).toFixed(1).replace('.0', '')}tr`;
-  }
-  if (amount >= 1000) {
-    return `${(amount / 1000).toFixed(0)}k`;
-  }
-  return `${amount}₫`;
-};
-
 const CostSummary: React.FC = () => {
-  const { language } = useAppStore();
+  const { language, currency } = useAppStore();
   const {
     itinerary,
     selectedCostItems,
@@ -44,6 +28,10 @@ const CostSummary: React.FC = () => {
   } = useTripStore();
   const t = translations[language];
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Format currency using centralized utility
+  const fmt = (amount: number) => formatCurrency(amount, currency);
+  const fmtCompact = (amount: number) => formatCurrencyCompact(amount, currency);
 
   const travelers = searchParams?.travelers;
   if (!travelers) return null;
@@ -134,7 +122,7 @@ const CostSummary: React.FC = () => {
                   </span>
                 </div>
                 <span className="text-sm font-semibold text-slate-700">
-                  {formatVND(costBreakdown.flightCost)}
+                  {fmt(costBreakdown.flightCost)}
                 </span>
               </div>
             )}
@@ -151,7 +139,7 @@ const CostSummary: React.FC = () => {
                   </span>
                 </div>
                 <span className="text-sm font-semibold text-slate-700">
-                  {formatVND(costBreakdown.foodCost)}
+                  {fmt(costBreakdown.foodCost)}
                 </span>
               </div>
             )}
@@ -169,7 +157,7 @@ const CostSummary: React.FC = () => {
                   </span>
                 </div>
                 <span className="text-sm font-semibold text-slate-700">
-                  {formatVND(costBreakdown.activityCost)}
+                  {fmt(costBreakdown.activityCost)}
                 </span>
               </div>
             )}
@@ -186,7 +174,7 @@ const CostSummary: React.FC = () => {
                   </span>
                 </div>
                 <span className="text-sm font-semibold text-slate-700">
-                  {formatVND(costBreakdown.hotelCost)}
+                  {fmt(costBreakdown.hotelCost)}
                 </span>
               </div>
             )}
@@ -196,7 +184,7 @@ const CostSummary: React.FC = () => {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-slate-800">{t.totalCost}</span>
                 <span className="text-lg font-bold text-blue-600">
-                  {formatVND(costBreakdown.totalCost)}
+                  {fmt(costBreakdown.totalCost)}
                 </span>
               </div>
             </div>
@@ -223,7 +211,7 @@ const CostSummary: React.FC = () => {
         <div className="flex items-center gap-2">
           {hasAnyCost && (
             <>
-              <span className="text-lg font-bold">{formatVNDCompact(costBreakdown.totalCost)}</span>
+              <span className="text-lg font-bold">{fmtCompact(costBreakdown.totalCost)}</span>
               {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
             </>
           )}

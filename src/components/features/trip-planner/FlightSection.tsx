@@ -1,24 +1,29 @@
 import React from 'react';
 import { Plane, Loader2, Clock, Check, ArrowRight, CircleDot } from 'lucide-react';
 import { translations } from '../../../utils/i18n';
+import { formatCurrency } from '../../../utils/currency';
 import { useAppStore } from '../../../stores/appStore';
 import { useTripStore } from '../../../stores/tripStore';
 import { FlightOption } from '../../../types';
 import { cn } from '../../../lib/utils';
-
-const formatVND = (amount: number): string => {
-  return new Intl.NumberFormat('vi-VN').format(amount) + '₫';
-};
 
 interface FlightCardProps {
   flight: FlightOption;
   isSelected: boolean;
   onSelect: () => void;
   language: 'vi' | 'en';
+  currency: 'VND' | 'USD';
 }
 
-const FlightCard: React.FC<FlightCardProps> = ({ flight, isSelected, onSelect, language }) => {
+const FlightCard: React.FC<FlightCardProps> = ({
+  flight,
+  isSelected,
+  onSelect,
+  language,
+  currency,
+}) => {
   const t = translations[language];
+  const fmt = (amount: number) => formatCurrency(amount, currency);
 
   return (
     <div
@@ -76,16 +81,14 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight, isSelected, onSelect, l
               {flight.cabinClass}
             </span>
             <div className="mt-2">
-              <span className="text-lg font-bold text-blue-600">
-                {formatVND(flight.pricePerAdult)}
-              </span>
+              <span className="text-lg font-bold text-blue-600">{fmt(flight.pricePerAdult)}</span>
               <span className="text-xs text-slate-400">
                 /{language === 'vi' ? 'người lớn' : 'adult'}
               </span>
             </div>
             {flight.pricePerChild > 0 && (
               <p className="text-xs text-slate-400 mt-0.5">
-                {language === 'vi' ? 'Trẻ em' : 'Child'}: {formatVND(flight.pricePerChild)}
+                {language === 'vi' ? 'Trẻ em' : 'Child'}: {fmt(flight.pricePerChild)}
               </p>
             )}
           </div>
@@ -117,7 +120,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight, isSelected, onSelect, l
 };
 
 const FlightSection: React.FC = () => {
-  const { language } = useAppStore();
+  const { language, currency } = useAppStore();
   const { flights, isLoadingFlights, selectedFlight, setSelectedFlight, searchParams } =
     useTripStore();
   const t = translations[language];
@@ -160,6 +163,7 @@ const FlightSection: React.FC = () => {
               isSelected={selectedFlight?.id === flight.id}
               onSelect={() => setSelectedFlight(selectedFlight?.id === flight.id ? null : flight)}
               language={language}
+              currency={currency}
             />
           ))}
         </div>

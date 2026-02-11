@@ -1,4 +1,5 @@
 export type Language = 'vi' | 'en';
+export type Currency = 'VND' | 'USD';
 
 // Place/Location types for autocomplete
 export interface Place {

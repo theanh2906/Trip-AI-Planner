@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { Moon, Wallet, X, ChevronRight, Users, Minus, Plus, Baby } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { translations } from '../../../utils/i18n';
+import {
+  formatCurrencyCompact,
+  formatCurrencyInput,
+  parseCurrencyInput,
+  getCurrencySymbol,
+} from '../../../utils/currency';
 import { useAppStore } from '../../../stores/appStore';
 import { useTripStore } from '../../../stores/tripStore';
 import { RouteOption, HotelBudget } from '../../../types';
@@ -9,26 +15,6 @@ import { cn } from '../../../lib/utils';
 import { DatePicker } from '../../ui/DatePicker';
 
 const NIGHT_OPTIONS = [1, 2, 3, 4, 5, 7, 14];
-
-// Format VNĐ
-const formatVND = (amount: number): string => {
-  if (amount >= 1000000) {
-    return `${(amount / 1000000).toFixed(1).replace('.0', '')}tr`;
-  }
-  return `${(amount / 1000).toFixed(0)}k`;
-};
-
-// Parse VNĐ input — allow "500000" or "500k" or "1.5tr"
-const parseVNDInput = (value: string): number => {
-  const cleaned = value.replace(/[^\d]/g, '');
-  return parseInt(cleaned) || 0;
-};
-
-// Format number for input display
-const formatInputVND = (amount: number): string => {
-  if (amount === 0) return '';
-  return new Intl.NumberFormat('vi-VN').format(amount);
-};
 
 // Get tomorrow's date
 const getTomorrow = (): string => {
@@ -42,7 +28,7 @@ interface TripDetailsModalProps {
 }
 
 const TripDetailsModal: React.FC<TripDetailsModalProps> = ({ route }) => {
-  const { language } = useAppStore();
+  const { language, currency } = useAppStore();
   const { showTripDetailsModal, closeTripDetailsModal, selectRoute, selectRouteWithDetails } =
     useTripStore();
   const t = translations[language];
@@ -85,7 +71,7 @@ const TripDetailsModal: React.FC<TripDetailsModalProps> = ({ route }) => {
 
   const handleBudgetMin = (value: string) => {
     setBudgetMinInput(value);
-    const num = parseVNDInput(value);
+    const num = parseCurrencyInput(value, currency);
     if (num >= 0) {
       setBudget((prev) => ({ ...prev, min: num }));
     }
@@ -93,18 +79,18 @@ const TripDetailsModal: React.FC<TripDetailsModalProps> = ({ route }) => {
 
   const handleBudgetMax = (value: string) => {
     setBudgetMaxInput(value);
-    const num = parseVNDInput(value);
+    const num = parseCurrencyInput(value, currency);
     if (num >= 0) {
       setBudget((prev) => ({ ...prev, max: num }));
     }
   };
 
   const handleBudgetMinBlur = () => {
-    setBudgetMinInput(formatInputVND(budget.min));
+    setBudgetMinInput(formatCurrencyInput(budget.min, currency));
   };
 
   const handleBudgetMaxBlur = () => {
-    setBudgetMaxInput(formatInputVND(budget.max));
+    setBudgetMaxInput(formatCurrencyInput(budget.max, currency));
   };
 
   const displayNights = customNights || nights;
@@ -281,7 +267,7 @@ const TripDetailsModal: React.FC<TripDetailsModalProps> = ({ route }) => {
                     className="w-full px-3 py-2.5 pr-8 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 text-sm"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
-                    đ
+                    {getCurrencySymbol(currency)}
                   </span>
                 </div>
                 <span className="text-slate-400 font-medium">—</span>
@@ -297,7 +283,7 @@ const TripDetailsModal: React.FC<TripDetailsModalProps> = ({ route }) => {
                     className="w-full px-3 py-2.5 pr-8 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 text-sm"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
-                    đ
+                    {getCurrencySymbol(currency)}
                   </span>
                 </div>
               </div>
@@ -331,8 +317,8 @@ const TripDetailsModal: React.FC<TripDetailsModalProps> = ({ route }) => {
                 <span>
                   💰{' '}
                   <strong>
-                    {formatVND(budget.min * displayNights)} -{' '}
-                    {formatVND(budget.max * displayNights)}
+                    {formatCurrencyCompact(budget.min * displayNights, currency)} -{' '}
+                    {formatCurrencyCompact(budget.max * displayNights, currency)}
                   </strong>
                 </span>
               )}

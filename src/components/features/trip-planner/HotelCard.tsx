@@ -4,12 +4,8 @@ import { HotelRecommendation } from '../../../types';
 import { cn } from '../../../lib/utils';
 import { useTripStore } from '../../../stores/tripStore';
 import { translations } from '../../../utils/i18n';
+import { formatCurrency } from '../../../utils/currency';
 import { useAppStore } from '../../../stores/appStore';
-
-// Format VNĐ with proper formatting
-const formatVND = (amount: number): string => {
-  return new Intl.NumberFormat('vi-VN').format(amount) + '₫';
-};
 
 // Map amenity names to icons
 const amenityIcons: Record<string, React.ReactNode> = {
@@ -48,6 +44,8 @@ const HotelCard: React.FC<HotelCardProps> = ({ hotel, nights, language, classNam
   const t = translations[appLang];
   const isSelected = selectedHotel?.id === hotel.id;
   const hasTravelers = !!searchParams?.travelers;
+  const { currency } = useAppStore();
+  const fmt = (amount: number) => formatCurrency(amount, currency);
 
   return (
     <div
@@ -107,15 +105,13 @@ const HotelCard: React.FC<HotelCardProps> = ({ hotel, nights, language, classNam
         <div className="mt-3 pt-3 border-t border-slate-100">
           <div className="flex items-baseline justify-between">
             <div>
-              <span className="text-lg font-bold text-blue-600">
-                {formatVND(hotel.pricePerNight)}
-              </span>
+              <span className="text-lg font-bold text-blue-600">{fmt(hotel.pricePerNight)}</span>
               <span className="text-xs text-slate-400">{perNightLabel}</span>
             </div>
           </div>
           <div className="mt-1 text-xs text-slate-500">
             💰 {language === 'vi' ? 'Tổng' : 'Total'} {nights} {nightLabel}:{' '}
-            <span className="font-semibold text-slate-700">{formatVND(hotel.totalPrice)}</span>
+            <span className="font-semibold text-slate-700">{fmt(hotel.totalPrice)}</span>
           </div>
 
           {/* Select Hotel Button */}
