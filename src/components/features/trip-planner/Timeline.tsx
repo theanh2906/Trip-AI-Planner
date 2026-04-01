@@ -23,6 +23,7 @@ import { cn } from '../../../lib/utils';
 import HotelSection from './HotelSection';
 import CostSummary from './CostSummary';
 import FlightSection from './FlightSection';
+import TripWeatherWidget from './TripWeatherWidget';
 import { formatCurrencyCompact } from '../../../utils/currency';
 
 // Types that have costs (food, sightseeing, photo spots)
@@ -68,6 +69,16 @@ const Timeline: React.FC = () => {
   // Check if multi-day trip
   const isMultiDay = availableDays.length > 1;
   const hasTravelers = !!searchParams?.travelers;
+
+  // Calculate the actual date for the selected day
+  const getSelectedDate = () => {
+    if (!searchParams?.departureDate) return '';
+    const date = new Date(searchParams.departureDate);
+    date.setDate(date.getDate() + selectedDay - 1);
+    return date.toISOString().split('T')[0];
+  };
+
+  const selectedDate = getSelectedDate();
 
   if (!selectedRoute || itinerary.length === 0) return null;
 
@@ -188,6 +199,11 @@ const Timeline: React.FC = () => {
           )}
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-slate-50 pb-24 md:pb-6">
+          {/* Weather Widget */}
+          {searchParams?.destination && selectedDate && (
+            <TripWeatherWidget destination={searchParams.destination} date={selectedDate} />
+          )}
+
           {/* Flight Section - only show if flights available */}
           {flights.length > 0 && selectedDay === 1 && <FlightSection />}
 

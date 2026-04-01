@@ -16,7 +16,12 @@ import { DatePicker } from '../../ui/DatePicker';
 
 const NIGHT_OPTIONS = [1, 2, 3, 4, 5, 7, 14];
 
-// Get tomorrow's date
+// Get today's date in YYYY-MM-DD format
+const getToday = (): string => {
+  return new Date().toISOString().split('T')[0];
+};
+
+// Get tomorrow's date in YYYY-MM-DD format
 const getTomorrow = (): string => {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -33,7 +38,7 @@ const TripDetailsModal: React.FC<TripDetailsModalProps> = ({ route }) => {
     useTripStore();
   const t = translations[language];
 
-  const [departureDate, setDepartureDate] = useState(getTomorrow());
+  const [departureDate, setDepartureDate] = useState(getToday());
   const [nights, setNights] = useState(2);
   const [budget, setBudget] = useState<HotelBudget>({ min: 300000, max: 1000000 });
   const [budgetMinInput, setBudgetMinInput] = useState('300,000');
@@ -70,19 +75,15 @@ const TripDetailsModal: React.FC<TripDetailsModalProps> = ({ route }) => {
   };
 
   const handleBudgetMin = (value: string) => {
-    setBudgetMinInput(value);
     const num = parseCurrencyInput(value, currency);
-    if (num >= 0) {
-      setBudget((prev) => ({ ...prev, min: num }));
-    }
+    setBudget((prev) => ({ ...prev, min: num }));
+    setBudgetMinInput(num > 0 ? formatCurrencyInput(num, currency) : '');
   };
 
   const handleBudgetMax = (value: string) => {
-    setBudgetMaxInput(value);
     const num = parseCurrencyInput(value, currency);
-    if (num >= 0) {
-      setBudget((prev) => ({ ...prev, max: num }));
-    }
+    setBudget((prev) => ({ ...prev, max: num }));
+    setBudgetMaxInput(num > 0 ? formatCurrencyInput(num, currency) : '');
   };
 
   const handleBudgetMinBlur = () => {
@@ -92,6 +93,8 @@ const TripDetailsModal: React.FC<TripDetailsModalProps> = ({ route }) => {
   const handleBudgetMaxBlur = () => {
     setBudgetMaxInput(formatCurrencyInput(budget.max, currency));
   };
+
+  const isBudgetInvalid = budget.max > 0 && budget.min > 0 && budget.max < budget.min;
 
   const displayNights = customNights || nights;
 
@@ -129,7 +132,7 @@ const TripDetailsModal: React.FC<TripDetailsModalProps> = ({ route }) => {
               <DatePicker
                 value={departureDate}
                 onChange={setDepartureDate}
-                minDate={getTomorrow()}
+                minDate={getToday()}
                 placeholder={t.selectDate}
               />
             </div>
@@ -262,9 +265,13 @@ const TripDetailsModal: React.FC<TripDetailsModalProps> = ({ route }) => {
                     value={budgetMinInput}
                     onChange={(e) => handleBudgetMin(e.target.value)}
                     onBlur={handleBudgetMinBlur}
-                    onFocus={() => setBudgetMinInput(budget.min > 0 ? String(budget.min) : '')}
                     placeholder="300,000"
-                    className="w-full px-3 py-2.5 pr-8 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 text-sm"
+                    className={cn(
+                      "w-full px-3 py-2.5 pr-8 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 transition-all text-slate-700 text-sm",
+                      isBudgetInvalid 
+                        ? "border-red-300 focus:ring-red-500/20 focus:border-red-500" 
+                        : "border-slate-200 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    )}
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
                     {getCurrencySymbol(currency)}
@@ -278,15 +285,24 @@ const TripDetailsModal: React.FC<TripDetailsModalProps> = ({ route }) => {
                     value={budgetMaxInput}
                     onChange={(e) => handleBudgetMax(e.target.value)}
                     onBlur={handleBudgetMaxBlur}
-                    onFocus={() => setBudgetMaxInput(budget.max > 0 ? String(budget.max) : '')}
                     placeholder="1,000,000"
-                    className="w-full px-3 py-2.5 pr-8 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 text-sm"
+                    className={cn(
+                      "w-full px-3 py-2.5 pr-8 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 transition-all text-slate-700 text-sm",
+                      isBudgetInvalid 
+                        ? "border-red-300 focus:ring-red-500/20 focus:border-red-500" 
+                        : "border-slate-200 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    )}
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
                     {getCurrencySymbol(currency)}
                   </span>
                 </div>
               </div>
+              {isBudgetInvalid && (
+                <p className="mt-1.5 text-xs text-red-500 font-medium animate-fade-in">
+                  {t.budgetError}
+                </p>
+              )}
             </div>
 
             {/* Compact Summary */}
@@ -333,14 +349,18 @@ const TripDetailsModal: React.FC<TripDetailsModalProps> = ({ route }) => {
               >
                 {t.skip}
               </button>
-              <button
-                type="button"
-                onClick={handleSubmit}
-                className="flex-[2] py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2 text-sm"
-              >
-                {t.viewItinerary}
-                <ChevronRight className="w-4 h-4" />
-              </button>
+              {isBudgetInvalid ? (
+                <div className="flex-[2]" /> // Empty space when button is hidden
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  className="flex-[2] py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2 text-sm"
+                >
+                  {t.viewItinerary}
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
         </Drawer.Content>

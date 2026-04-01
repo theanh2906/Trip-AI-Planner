@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { AppShell } from './components/layout';
 import { SearchPanel, RouteSelector, Timeline } from './components/features/trip-planner';
+import WeatherDashboard from './components/features/weather/WeatherDashboard';
 import Map from './components/Map';
 import { translations } from './utils/i18n';
 import { useAppStore } from './stores/appStore';
@@ -80,7 +81,7 @@ const App: React.FC = () => {
       case 'budget':
         return <ComingSoon feature="Budget Calculator" />;
       case 'weather':
-        return <ComingSoon feature="Weather" />;
+        return <WeatherDashboard />;
       case 'ai-assistant':
         return <ComingSoon feature="AI Assistant" />;
       case 'saved-trips':

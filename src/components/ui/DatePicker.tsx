@@ -185,6 +185,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     const today = new Date();
     setViewMonth(today.getMonth());
     setViewYear(today.getFullYear());
+    
+    // Also select today if it's not disabled
+    if (!isDisabled(today)) {
+      handleSelectDate(today);
+    }
   };
 
   // Format display value

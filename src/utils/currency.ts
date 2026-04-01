@@ -21,7 +21,8 @@ export const formatCurrency = (amountVND: number, currency: Currency): string =>
   }
   const value = convert(amountVND, currency);
   if (currency === 'VND') {
-    return new Intl.NumberFormat('vi-VN').format(value) + '₫';
+    // Force ',' as thousands separator even for VND
+    return new Intl.NumberFormat('en-US').format(value) + '₫';
   }
   return '$' + new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(value));
 };
@@ -59,19 +60,27 @@ export const formatCurrencyCompact = (amountVND: number, currency: Currency): st
 export const formatCurrencyInput = (amountVND: number, currency: Currency): string => {
   if (amountVND === 0) return '';
   const value = convert(amountVND, currency);
-  if (currency === 'VND') {
-    return new Intl.NumberFormat('vi-VN').format(value);
-  }
-  return new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(value));
+  // Use 'en-US' for both to ensure ',' is used as thousands separator
+  return new Intl.NumberFormat('en-US', { 
+    minimumFractionDigits: 0, 
+    maximumFractionDigits: 0 
+  }).format(Math.round(value));
 };
 
 /**
  * Parse user input string back to VND amount
  */
 export const parseCurrencyInput = (value: string, currency: Currency): number => {
-  const cleaned = value.replace(/[^\d.]/g, '');
+  if (currency === 'VND') {
+    // VND doesn't use decimals in this app, so just take digits
+    const cleaned = value.replace(/\D/g, '');
+    return parseInt(cleaned) || 0;
+  }
+  
+  // For USD/other: remove commas (thousands separator) but keep the dot (decimal)
+  const cleaned = value.replace(/,/g, '');
   const num = parseFloat(cleaned) || 0;
-  if (currency === 'VND') return Math.round(num);
+  
   // Convert USD back to VND
   return Math.round(num / VND_TO_USD);
 };

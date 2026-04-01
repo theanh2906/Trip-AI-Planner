@@ -38,20 +38,22 @@ export function getCurrentPosition(): Promise<GeolocationCoordinates> {
       (position) => resolve(position.coords),
       (error) => {
         let errorResult: GeolocationError;
+        const { PERMISSION_DENIED, POSITION_UNAVAILABLE, TIMEOUT } = error;
+        
         switch (error.code) {
-          case error.PERMISSION_DENIED:
+          case PERMISSION_DENIED:
             errorResult = {
               code: 'PERMISSION_DENIED',
               message: 'User denied geolocation permission',
             };
             break;
-          case error.POSITION_UNAVAILABLE:
+          case POSITION_UNAVAILABLE:
             errorResult = {
               code: 'POSITION_UNAVAILABLE',
               message: 'Location information unavailable',
             };
             break;
-          case error.TIMEOUT:
+          case TIMEOUT:
             errorResult = { code: 'TIMEOUT', message: 'Location request timed out' };
             break;
           default:
@@ -60,9 +62,9 @@ export function getCurrentPosition(): Promise<GeolocationCoordinates> {
         reject(errorResult);
       },
       {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000, // Cache position for 5 minutes
+        enableHighAccuracy: false, // Set to false to avoid long GPS locks on desktops
+        timeout: 15000,           // Increased to 15 seconds
+        maximumAge: 300000,        // Cache position for 5 minutes
       }
     );
   });

@@ -14,7 +14,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: 'trip-planner', labelKey: 'navTripPlanner', icon: Map },
   { id: 'budget', labelKey: 'navBudget', icon: Wallet, disabled: true },
-  { id: 'weather', labelKey: 'navWeather', icon: CloudSun, disabled: true },
+  { id: 'weather', labelKey: 'navWeather', icon: CloudSun },
   { id: 'ai-assistant', labelKey: 'navAiAssistant', icon: Sparkles, disabled: true },
   { id: 'more', labelKey: 'navMore', icon: MoreHorizontal },
 ];
