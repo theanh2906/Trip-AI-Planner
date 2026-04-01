@@ -1,7 +1,8 @@
 import { WeatherResponse } from '../types/weather';
 
-const API_KEY = import.meta.env.VITE_VISUAL_CROSSING_API_KEY;
-const BASE_URL = 'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline';
+const API_KEY = process.env.VISUAL_CROSSING_API_KEY;
+const BASE_URL =
+  'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline';
 
 export const weatherService = {
   async fetchWeather(location: string, date1?: string, date2?: string): Promise<WeatherResponse> {
