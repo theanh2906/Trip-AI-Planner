@@ -14,7 +14,7 @@ import {
   fetchItinerary,
   fetchHotelRecommendations,
   fetchFlightOptions,
-} from '../services/geminiService';
+} from '../services/aiClient';
 import { requiresFlying } from '../services/promptService';
 import { useAppStore } from './appStore';
 

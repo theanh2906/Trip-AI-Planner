@@ -5,11 +5,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - GEMINI_API_KEY=${GEMINI_API_KEY}
     ports:
-      - "3010:3010"
+      - '3010:3010'
     environment:
+      - NODE_ENV=production
       - PORT=3010
-      - ENVIRONMENT=production
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - VISUAL_CROSSING_API_KEY=${VISUAL_CROSSING_API_KEY}
     restart: always

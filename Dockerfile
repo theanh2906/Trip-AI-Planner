@@ -1,35 +1,30 @@
-# Stage 1: Build
-FROM node:22-alpine AS builder
-
+# Stage 1: Install dependencies
+FROM node:22-alpine AS deps
 WORKDIR /app
-
-# Build argument for Gemini API key (required at build time)
-ARG GEMINI_API_KEY
-ENV GEMINI_API_KEY=${GEMINI_API_KEY}
-
-# Copy package files
 COPY package*.json ./
+RUN npm ci
 
-# Install dependencies
-RUN npm install
-
-# Copy source code
+# Stage 2: Build
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Build the app (API key is injected via Vite define)
+# API keys are NOT baked into the image — they are injected at runtime
 RUN npm run build
 
-# Stage 2: Production
-FROM nginx:alpine AS production
+# Stage 3: Production runner
+FROM node:22-alpine AS runner
+WORKDIR /app
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+ENV NODE_ENV=production
+ENV PORT=3010
+ENV HOSTNAME=0.0.0.0
 
-# Copy built assets from builder
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Copy Next.js standalone output
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
 
-# Expose port 3010
 EXPOSE 3010
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["node", "server.js"]

@@ -1,11 +1,16 @@
+'use client';
+
 import React, { useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { AppShell } from './components/layout';
 import { SearchPanel, RouteSelector, Timeline } from './components/features/trip-planner';
 import WeatherDashboard from './components/features/weather/WeatherDashboard';
-import Map from './components/Map';
 import { translations } from './utils/i18n';
 import { useAppStore } from './stores/appStore';
 import { useTripStore } from './stores/tripStore';
+
+// Leaflet requires browser APIs — must be loaded client-side only
+const Map = dynamic(() => import('./components/Map'), { ssr: false });
 
 const ComingSoon: React.FC<{ feature: string }> = ({ feature }) => {
   const { language } = useAppStore();

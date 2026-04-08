@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { WeatherResponse } from '../types/weather';
-import { weatherService } from '../services/weatherService';
 
 interface WeatherState {
   searchQuery: string;
@@ -26,7 +25,13 @@ export const useWeatherStore = create<WeatherState>((set) => ({
 
     set({ isLoading: true, error: null, searchQuery: location });
     try {
-      const data = await weatherService.fetchWeather(location);
+      const url = `/api/weather?location=${encodeURIComponent(location)}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: response.statusText }));
+        throw new Error(err.error ?? `Weather API error ${response.status}`);
+      }
+      const data = (await response.json()) as WeatherResponse;
       set({ weatherData: data, isLoading: false });
     } catch (error) {
       set({ 
