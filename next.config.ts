@@ -3,11 +3,6 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   output: 'standalone',
   devIndicators: false,
-  experimental: {
-    nextDev: {
-      statusBar: false,
-    },
-  },
   // Allow Bing image URLs used for place thumbnails
   images: {
     remotePatterns: [
