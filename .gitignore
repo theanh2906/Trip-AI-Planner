@@ -30,3 +30,6 @@ temp/
 .agent/
 
 .next/
+
+# Secrets
+firebase-service-account.json

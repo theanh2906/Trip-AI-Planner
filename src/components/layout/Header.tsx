@@ -1,11 +1,13 @@
 import React from 'react';
-import { Menu, Navigation2 } from 'lucide-react';
+import { Menu, Navigation2, User, LogIn } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import { translations } from '../../utils/i18n';
 import { cn } from '../../lib/utils';
+import { useAuthStore } from '../../stores/authStore';
 
 const Header: React.FC = () => {
   const { language, toggleSidebar } = useAppStore();
+  const { user, setIsAuthForced } = useAuthStore();
   const t = translations[language];
 
   return (
@@ -36,7 +38,32 @@ const Header: React.FC = () => {
           <span className="font-bold text-slate-800">{t.appTitle}</span>
         </div>
       </div>
-      <div className="md:hidden" />
+      
+      <div className="flex items-center gap-2">
+        {user ? (
+          <button
+            onClick={toggleSidebar}
+            className="flex items-center gap-2 p-1 pr-3 bg-white/90 rounded-full border border-slate-200 shadow-sm hover:bg-white transition-all active:scale-95"
+          >
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden border border-blue-200">
+              {user.photoURL ? (
+                <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-4 h-4 text-blue-600" />
+              )}
+            </div>
+            <span className="text-sm font-medium text-slate-700 hidden sm:inline">{user.displayName || 'User'}</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setIsAuthForced(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 text-sm font-bold"
+          >
+            <LogIn className="w-4 h-4" />
+            <span className="hidden sm:inline">Đăng nhập</span>
+          </button>
+        )}
+      </div>
     </header>
   );
 };

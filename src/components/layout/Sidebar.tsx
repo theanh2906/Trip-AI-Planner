@@ -11,11 +11,14 @@ import {
   Settings,
   Globe,
   DollarSign,
+  LogIn,
+  LogOut,
+  User as UserIcon
 } from 'lucide-react';
 import { useAppStore, FeatureType } from '../../stores/appStore';
 import { translations } from '../../utils/i18n';
 import { cn } from '../../lib/utils';
-import { Currency } from '../../types';
+import { useAuthStore } from '../../stores/authStore';
 
 interface NavItem {
   id: FeatureType;
@@ -43,6 +46,7 @@ const Sidebar: React.FC = () => {
     currency,
     setCurrency,
   } = useAppStore();
+  const { user, logout, setIsAuthForced } = useAuthStore();
   const t = translations[language];
 
   useEffect(() => {
@@ -125,7 +129,50 @@ const Sidebar: React.FC = () => {
                   );
                 })}
               </ul>
+              
               <div className="my-4 border-t border-slate-100" />
+              
+              {/* User Section */}
+              <div className="px-2 pb-2">
+                {user ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3 px-4 py-3 text-slate-600">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center border border-blue-200 overflow-hidden">
+                        {user.photoURL ? (
+                          <img src={user.photoURL} alt={user.displayName || ''} className="w-full h-full object-cover" />
+                        ) : (
+                          <UserIcon className="w-5 h-5 text-blue-600" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{user.displayName || 'Khách'}</p>
+                        <p className="text-[10px] text-slate-500 truncate">{user.email}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => logout()}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      <span>{language === 'vi' ? 'Đăng xuất' : 'Logout'}</span>
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setIsAuthForced(true);
+                      setSidebarOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left font-medium bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30 transition-all font-bold"
+                  >
+                    <LogIn className="w-5 h-5" />
+                    <span>{language === 'vi' ? 'Đăng nhập ngay' : 'Login Now'}</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="my-2 border-t border-slate-100" />
+
               <button
                 onClick={() => {
                   setActiveFeature('settings');

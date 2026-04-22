@@ -65,8 +65,12 @@ const TripPlannerFeature: React.FC = () => {
   );
 };
 
+import AuthPage from './components/features/auth/AuthPage';
+import { useAuthStore } from './stores/authStore';
+
 const App: React.FC = () => {
   const { activeFeature, setOnline } = useAppStore();
+  const { user, guestPromptCount, isInitializing, isAuthForced } = useAuthStore();
 
   useEffect(() => {
     const handleOnline = () => setOnline(true);
@@ -78,6 +82,21 @@ const App: React.FC = () => {
       window.removeEventListener('offline', handleOffline);
     };
   }, [setOnline]);
+
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Auth Guard: If not logged in and reached guest limit OR login is forced
+  const showAuth = !user && (guestPromptCount >= 3 || isAuthForced);
+
+  if (showAuth) {
+    return <AuthPage />;
+  }
 
   const renderFeature = () => {
     switch (activeFeature) {

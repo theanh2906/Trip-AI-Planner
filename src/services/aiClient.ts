@@ -13,10 +13,22 @@ import type {
   TravelMode,
 } from '../types';
 
+import { useAuthStore } from '../stores/authStore';
+
 async function callAI<T>(action: string, payload: Record<string, unknown>): Promise<T> {
+  const { user, incrementGuestPrompt } = useAuthStore.getState();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+  if (user) {
+    const token = await user.getIdToken();
+    headers['Authorization'] = `Bearer ${token}`;
+  } else {
+    incrementGuestPrompt();
+  }
+
   const response = await fetch('/api/ai', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ action, payload }),
   });
 
