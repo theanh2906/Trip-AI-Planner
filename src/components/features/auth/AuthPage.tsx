@@ -4,11 +4,9 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Mail, 
-  Lock, 
+  Lock,    
   User, 
   ArrowRight, 
-  Github, 
-  Tripod, 
   Sparkles,
   Info
 } from 'lucide-react';
