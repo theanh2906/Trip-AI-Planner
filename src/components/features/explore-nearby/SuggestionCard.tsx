@@ -88,12 +88,11 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({ suggestion, isSelected,
 
   const handleDirections = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!suggestion.coordinates) return;
 
-    const dest = `${suggestion.coordinates.lat},${suggestion.coordinates.lng}`;
+    const destination = encodeURIComponent(`${suggestion.title}, ${suggestion.locationName}`);
     const origin = location ? `${location.lat},${location.lng}` : '';
     const originParam = origin ? `&origin=${origin}` : '';
-    const url = `https://www.google.com/maps/dir/?api=1${originParam}&destination=${dest}&travelmode=walking`;
+    const url = `https://www.google.com/maps/dir/?api=1${originParam}&destination=${destination}&travelmode=walking`;
     window.open(url, '_blank');
   };
 
@@ -217,15 +216,13 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({ suggestion, isSelected,
         )}
 
         {/* Directions button */}
-        {suggestion.coordinates && (
-          <button
-            onClick={handleDirections}
-            className="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-medium text-white bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all"
-          >
-            <Navigation className="w-3.5 h-3.5" />
-            {t.exploreDirections}
-          </button>
-        )}
+        <button
+          onClick={handleDirections}
+          className="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-medium text-white bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all"
+        >
+          <Navigation className="w-3.5 h-3.5" />
+          {t.exploreDirections}
+        </button>
       </div>
     </div>
   );

@@ -204,9 +204,9 @@ const ExploreNearby: React.FC = () => {
 
   // --- Panel content ---
   const renderPanel = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {/* Header */}
-      <div className="px-4 pt-4 pb-3 border-b border-slate-100">
+      <div className="flex-none px-4 pt-4 pb-3 border-b border-slate-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
@@ -242,7 +242,7 @@ const ExploreNearby: React.FC = () => {
 
       {/* Category filter tabs */}
       {suggestions.length > 0 && (
-        <div className="px-4 py-2 border-b border-slate-100 overflow-x-auto overscroll-contain touch-pan-x">
+        <div className="flex-none px-4 py-2 border-b border-slate-100 overflow-x-auto overscroll-contain touch-pan-x">
           <div className="flex gap-1.5 min-w-max">
             {CATEGORIES.map((cat) => (
               <button
@@ -263,7 +263,7 @@ const ExploreNearby: React.FC = () => {
       )}
 
       {/* Content area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain touch-pan-y">
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar overscroll-contain touch-pan-y">
         {renderStatus()}
 
         {filteredSuggestions.length > 0 && (
@@ -313,9 +313,9 @@ const ExploreNearby: React.FC = () => {
 
       {/* Mobile: bottom panel */}
       {isMobile && (
-        <div className="absolute bottom-16 left-0 right-0 max-h-[60vh] bg-white/95 backdrop-blur-xl rounded-t-2xl shadow-2xl z-20 flex flex-col overflow-hidden">
+        <div className="absolute bottom-16 left-0 right-0 h-[60vh] bg-white/95 backdrop-blur-xl rounded-t-2xl shadow-2xl z-20 flex flex-col">
           {/* Drag handle */}
-          <div className="flex justify-center py-2">
+          <div className="flex-none flex justify-center py-2">
             <div className="w-10 h-1 bg-slate-300 rounded-full" />
           </div>
           {renderPanel()}
