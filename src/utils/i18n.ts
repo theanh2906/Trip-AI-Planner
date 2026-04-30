@@ -140,6 +140,7 @@ export const translations = {
     exploreDisclaimer: 'Giờ mở cửa là ước tính. Vui lòng kiểm tra trước khi đi.',
     exploreNoSuggestions: 'Không tìm thấy gợi ý nào',
     exploreRetry: 'Thử lại',
+    exploreDirections: 'Chỉ đường',
   },
   en: {
     appTitle: 'TripAI',
@@ -280,5 +281,6 @@ export const translations = {
     exploreDisclaimer: 'Opening hours are estimates. Please verify before visiting.',
     exploreNoSuggestions: 'No suggestions found',
     exploreRetry: 'Retry',
+    exploreDirections: 'Directions',
   },
 };

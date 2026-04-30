@@ -14,10 +14,12 @@ import {
   Sun,
   CloudRain,
   Cloud,
+  Navigation,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { translations } from '@/utils/i18n';
 import { useAppStore } from '@/stores/appStore';
+import { useExploreStore } from '@/stores/exploreStore';
 import { formatCurrency } from '@/utils/currency';
 import type { NearbySuggestion, NearbyCategory } from '@/types';
 
@@ -51,11 +53,23 @@ interface SuggestionCardProps {
 
 const SuggestionCard: React.FC<SuggestionCardProps> = ({ suggestion, isSelected, onClick }) => {
   const { language, currency } = useAppStore();
+  const { location } = useExploreStore();
   const t = translations[language];
 
   const catConfig = categoryConfig[suggestion.category];
   const CatIcon = catConfig.icon;
   const WeatherIcon = weatherIcons[suggestion.weatherSuitability] || Cloud;
+
+  const handleDirections = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!suggestion.coordinates) return;
+
+    const dest = `${suggestion.coordinates.lat},${suggestion.coordinates.lng}`;
+    const origin = location ? `${location.lat},${location.lng}` : '';
+    const originParam = origin ? `&origin=${origin}` : '';
+    const url = `https://www.google.com/maps/dir/?api=1${originParam}&destination=${dest}&travelmode=walking`;
+    window.open(url, '_blank');
+  };
 
   const categoryLabel =
     {
@@ -172,6 +186,17 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({ suggestion, isSelected,
           <div className="text-xs text-blue-600 bg-blue-50 rounded-lg px-2 py-1.5">
             💡 {suggestion.tips[0]}
           </div>
+        )}
+
+        {/* Directions button */}
+        {suggestion.coordinates && (
+          <button
+            onClick={handleDirections}
+            className="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-medium text-white bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg hover:from-blue-600 hover:to-indigo-700 active:scale-[0.98] transition-all"
+          >
+            <Navigation className="w-3.5 h-3.5" />
+            {t.exploreDirections}
+          </button>
         )}
       </div>
     </div>
