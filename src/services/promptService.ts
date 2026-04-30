@@ -559,3 +559,46 @@ export const getFallbackRouteMessage = (lang: Language) => ({
       ? 'AI chưa thể tạo tuyến đường lúc này.'
       : 'AI could not generate routes at this moment.',
 });
+
+// ============================================================================
+// NEARBY SUGGESTIONS PROMPT
+// ============================================================================
+
+export const buildNearbySuggestionsPrompt = (
+  city: string,
+  country: string,
+  weather: { temp: number; conditions: string; precipprob: number } | null,
+  currentTime: string,
+  dayOfWeek: string,
+  lang: Language
+): string => {
+  const langInstruction = getLangInstruction(lang);
+
+  const weatherContext = weather
+    ? `Current weather: ${weather.temp}°C, ${weather.conditions}, precipitation probability ${weather.precipprob}%.`
+    : 'Weather data unavailable.';
+
+  return `You are a local travel guide AI for ${city}, ${country}.
+${langInstruction}
+
+Context:
+- Current time: ${currentTime} (${dayOfWeek})
+- ${weatherContext}
+
+Suggest 6-8 activities that someone can do RIGHT NOW or within the next few hours.
+
+Rules:
+1. Only suggest places that are likely OPEN at ${currentTime} on a ${dayOfWeek}.
+2. If precipitation probability > 50% or conditions include rain/storm, prioritize INDOOR activities (museums, malls, cafes, indoor entertainment).
+3. If weather is clear and temperature is comfortable (18-32°C), include OUTDOOR activities (parks, walking tours, beaches).
+4. If it's evening (after 18:00), suggest dinner spots, night markets, bars, entertainment.
+5. If it's morning (before 10:00), suggest breakfast spots, morning markets, temples, cafes.
+6. Include a mix of categories: food, culture, outdoor, shopping, entertainment, cafe, wellness.
+7. For each suggestion, estimate opening hours based on common business hours in ${country}.
+8. Set isOpenNow based on whether the place is typically open at ${currentTime}.
+9. Rate weatherSuitability: "ideal" (perfect match), "ok" (doable), "poor" (not recommended in current weather).
+10. All costs in VNĐ. Set 0 for free activities.
+11. Provide 1-2 practical tips per suggestion.
+
+Return a JSON array of suggestions.`;
+};

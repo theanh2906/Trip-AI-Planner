@@ -6,6 +6,7 @@ import {
   Map,
   Wallet,
   CloudSun,
+  Compass,
   Sparkles,
   Bookmark,
   Settings,
@@ -29,6 +30,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { id: 'trip-planner', labelKey: 'navTripPlanner', icon: Map },
+  { id: 'explore-nearby', labelKey: 'navExploreNearby', icon: Compass },
   { id: 'budget', labelKey: 'navBudget', icon: Wallet, disabled: true },
   { id: 'weather', labelKey: 'navWeather', icon: CloudSun },
   { id: 'ai-assistant', labelKey: 'navAiAssistant', icon: Sparkles, disabled: true },

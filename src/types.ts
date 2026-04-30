@@ -130,6 +130,34 @@ export interface HotelRecommendation {
   imageUrl?: string;
 }
 
+// Explore Nearby types
+export type NearbyCategory =
+  | 'food'
+  | 'culture'
+  | 'outdoor'
+  | 'shopping'
+  | 'entertainment'
+  | 'cafe'
+  | 'wellness';
+
+export interface NearbySuggestion {
+  id: string;
+  title: string;
+  description: string;
+  category: NearbyCategory;
+  locationName: string;
+  coordinates?: Coordinates;
+  openHours?: string;
+  isOpenNow?: boolean;
+  weatherSuitability: 'ideal' | 'ok' | 'poor';
+  estimatedDuration: string;
+  costPerAdult: number;
+  costPerChild: number;
+  rating?: string;
+  tips?: string[];
+  imageUrl?: string;
+}
+
 export interface TripData {
   origin: string;
   destination: string;

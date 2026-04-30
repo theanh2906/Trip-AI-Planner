@@ -1,5 +1,5 @@
 import React from 'react';
-import { Map, Wallet, CloudSun, Sparkles, MoreHorizontal } from 'lucide-react';
+import { Map, Wallet, CloudSun, Compass, MoreHorizontal } from 'lucide-react';
 import { useAppStore, FeatureType } from '../../stores/appStore';
 import { translations } from '../../utils/i18n';
 import { cn } from '../../lib/utils';
@@ -13,9 +13,9 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { id: 'trip-planner', labelKey: 'navTripPlanner', icon: Map },
-  { id: 'budget', labelKey: 'navBudget', icon: Wallet, disabled: true },
+  { id: 'explore-nearby', labelKey: 'navExploreNearby', icon: Compass },
   { id: 'weather', labelKey: 'navWeather', icon: CloudSun },
-  { id: 'ai-assistant', labelKey: 'navAiAssistant', icon: Sparkles, disabled: true },
+  { id: 'budget', labelKey: 'navBudget', icon: Wallet, disabled: true },
   { id: 'more', labelKey: 'navMore', icon: MoreHorizontal },
 ];
 

@@ -33,3 +33,6 @@ temp/
 
 # Secrets
 firebase-service-account.json
+.github/
+openspecs/
+plans/

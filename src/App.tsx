@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { AppShell } from './components/layout';
 import { SearchPanel, RouteSelector, Timeline } from './components/features/trip-planner';
 import WeatherDashboard from './components/features/weather/WeatherDashboard';
+import { ExploreNearby } from './components/features/explore-nearby';
 import { translations } from './utils/i18n';
 import { useAppStore } from './stores/appStore';
 import { useTripStore } from './stores/tripStore';
@@ -106,6 +107,8 @@ const App: React.FC = () => {
         return <ComingSoon feature="Budget Calculator" />;
       case 'weather':
         return <WeatherDashboard />;
+      case 'explore-nearby':
+        return <ExploreNearby />;
       case 'ai-assistant':
         return <ComingSoon feature="AI Assistant" />;
       case 'saved-trips':

@@ -1,0 +1,191 @@
+# Cursor Rules for Trip AI Planner
+
+You are an expert developer working on Trip AI Planner — an AI-powered travel planning app for Asia-Pacific destinations.
+Follow these rules precisely when generating or modifying code.
+
+## Tech Stack
+
+| Layer      | Technology                                                          |
+| ---------- | ------------------------------------------------------------------- |
+| Framework  | Next.js 15 (App Router, standalone output)                          |
+| Language   | TypeScript (ES2022, bundler resolution, `@/*` path alias)           |
+| UI         | React 19, Tailwind CSS 3, Framer Motion                             |
+| Components | Radix UI (Dialog, Popover, Slot), Lucide React icons, Vaul (drawer) |
+| State      | Zustand 5 (with `persist` middleware for auth)                      |
+| AI         | Google Gemini (`@google/genai`, model: `gemini-3-flash-preview`)    |
+| Auth       | Firebase Auth (email/password + Google OAuth)                       |
+| Maps       | Leaflet 1.9 (dynamic import, SSR-disabled)                          |
+| i18n       | Custom `translations` object in `src/utils/i18n.ts`                 |
+| Weather    | Visual Crossing API                                                 |
+| Styling    | `cn()` helper from `@/lib/utils` using `clsx` + `tailwind-merge`    |
+| Testing    | Playwright                                                          |
+| Formatting | Prettier                                                            |
+| Deployment | Vercel (also Docker + Nginx available)                              |
+
+## Core Principles
+
+- **YAGNI** — Only build what's needed now
+- **KISS** — Simple, readable solutions over clever abstractions
+- **DRY** — Shared logic in hooks/utils/services
+- **SOLID** — Single responsibility per file; depend on abstractions
+- **Mobile-first** — Design for mobile, enhance for desktop
+- **Server-safe keys** — Never expose API keys to the browser
+
+## Project Structure
+
+```
+app/                    # Next.js App Router
+  layout.tsx            # Root layout (Inter font, MobileGestureProvider)
+  page.tsx              # Entry — renders <App />
+  globals.css           # Tailwind directives, Leaflet CSS
+  api/ai/route.ts       # AI proxy (protects Gemini API key)
+  api/weather/route.ts  # Weather proxy
+src/
+  App.tsx               # Main client component (feature routing, auth guard)
+  types.ts              # Shared type definitions
+  components/
+    features/           # auth/, trip-planner/, weather/
+    layout/             # AppShell, Header, Sidebar, BottomNav
+    providers/          # MobileGestureProvider
+    ui/                 # DatePicker (reusable primitives)
+    Icons.tsx           # CategoryIcon, getCategoryColor
+    Map.tsx             # Leaflet map wrapper
+  hooks/                # useMediaQuery, useIsMobile, useIsDesktop
+  lib/
+    firebase.ts         # Client-side Firebase init
+    firebase-admin.ts   # Server-side Firebase Admin
+    utils.ts            # cn() helper
+  services/
+    aiClient.ts         # Browser → /api/ai fetch wrapper
+    geminiService.ts    # Server-side Gemini calls (structured output)
+    promptService.ts    # All AI prompt templates
+    placesService.ts    # Place autocomplete (local JSON)
+    geolocationService.ts
+    weatherService.ts
+  stores/               # Zustand stores (appStore, tripStore, authStore, weatherStore)
+  utils/
+    currency.ts         # VND/USD formatting
+    i18n.ts             # translations object (vi, en)
+```
+
+## File Naming
+
+- **Components:** PascalCase (`SearchPanel.tsx`)
+- **Hooks:** camelCase with `use` prefix (`useMediaQuery.ts`)
+- **Stores:** camelCase with `Store` suffix (`tripStore.ts`)
+- **Services:** camelCase with `Service` suffix (`geminiService.ts`)
+- **Utils:** camelCase (`currency.ts`)
+- **Barrel exports:** `index.ts` in feature folders
+
+## UI Primitives — Always Use These
+
+| Component       | Import                       | Use Instead Of          |
+| --------------- | ---------------------------- | ----------------------- |
+| `DatePicker`    | `@/components/ui/DatePicker` | `<input type="date">`   |
+| `CategoryIcon`  | `@/components/Icons`         | Inline icon switches    |
+| `cn()`          | `@/lib/utils`                | Manual className concat |
+| Radix `Dialog`  | `@radix-ui/react-dialog`     | Custom modals           |
+| Radix `Popover` | `@radix-ui/react-popover`    | Custom dropdowns        |
+| `Vaul` Drawer   | `vaul`                       | Custom bottom sheets    |
+| Lucide icons    | `lucide-react`               | Raw SVGs                |
+
+## State Management
+
+- Zustand for all global state — one store per domain
+- Access via hooks: `useAppStore()`, `useTripStore()`, `useAuthStore()`
+- `persist` middleware only for page-reload survival (e.g., `authStore`)
+- Keep stores flat; derive computed values in components
+- Never import stores in server components
+
+## Styling
+
+- Tailwind CSS only — no CSS modules, no styled-components
+- Use `cn()` for conditional classes
+- Mobile breakpoint: `md:` (768px), design mobile-first
+- Font: Inter via `next/font/google`
+- Colors: Slate neutrals, Blue/Indigo primary, contextual category colors
+
+## API / Backend Pattern
+
+- Browser calls `aiClient.ts` → `POST /api/ai` → `geminiService.ts`
+- Never import `geminiService.ts` or access server env vars on the client
+- All AI responses use Gemini structured output (`responseSchema`)
+- Prompts centralized in `promptService.ts`
+- Auth: Firebase ID token as `Bearer` in `Authorization` header
+- Guest users: 3 free prompts, then auth wall
+
+## i18n
+
+- Translations in `src/utils/i18n.ts` — `vi` and `en` keys
+- Access: `const t = translations[language]` from `useAppStore()`
+- Default language: Vietnamese (`vi`)
+- All user-visible strings must use translations — never hardcode
+
+## TypeScript
+
+- Interfaces for object shapes, enums for fixed sets (`TravelMode`, `StopType`)
+- Types in `src/types.ts`; feature-specific in `src/types/`
+- Always use `@/*` path alias for `src/` imports
+- Mark client components with `'use client'`
+- Use `dynamic()` with `{ ssr: false }` for browser-only libs
+
+## React Patterns
+
+- Functional components with `React.FC<Props>`
+- Destructure props in function signature
+- SSR-safe: guard `window`/`navigator` with `typeof window !== 'undefined'`
+- Custom hooks in `src/hooks/`
+
+## Security
+
+- Server-only: `GEMINI_API_KEY`, `VISUAL_CROSSING_API_KEY`, `FIREBASE_ADMIN_*`
+- Client-safe: `NEXT_PUBLIC_FIREBASE_*` vars
+- Verify Firebase ID tokens in API routes via `firebase-admin`
+- Sanitize user input before AI prompts
+
+## Performance
+
+- Dynamic import Leaflet with `ssr: false`
+- `next/font` for font optimization
+- Standalone output for minimal Docker images
+- Lazy-load heavy features
+- `useCallback`/`useMemo` only when profiling shows need
+
+## Common Patterns
+
+- Feature routing via `useAppStore().activeFeature` in `App.tsx`
+- Mobile/desktop: `useIsMobile()` → conditional Header, BottomNav, Sidebar
+- Place autocomplete: local JSON via `placesService.ts`
+- Currency: store in VND, convert at display via `formatCurrency()`
+- AI structured output: Gemini `responseSchema` for typed responses
+- Cost estimation: select items → `CostSummary` computes totals
+
+## What NOT to Do
+
+- ❌ Import `geminiService.ts` or `firebase-admin.ts` in client components
+- ❌ Use `process.env.GEMINI_API_KEY` on the client
+- ❌ Hardcode UI strings — use `translations[language]`
+- ❌ Use raw HTML elements when a UI primitive exists
+- ❌ Create CSS files — use Tailwind classes
+- ❌ Add derived state to Zustand stores
+- ❌ Skip `'use client'` directive when using hooks/browser APIs
+- ❌ Inline AI prompts — put all prompts in `promptService.ts`
+- ❌ Store amounts in USD — always VND internally, convert at display
+- ❌ Use `useEffect` for data fetching — prefer service layer
+
+## Environment Variables
+
+**Server-only:** `GEMINI_API_KEY`, `VISUAL_CROSSING_API_KEY`, `FIREBASE_ADMIN_*`
+**Client-safe:** `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`
+
+## Run Commands
+
+| Action          | Command                   |
+| --------------- | ------------------------- |
+| Dev server      | `npm run dev` (port 4200) |
+| Build           | `npm run build`           |
+| Start prod      | `npm start` (port 4200)   |
+| Format          | `npm run format`          |
+| Format check    | `npm run format:check`    |
+| Generate places | `npm run generate:places` |
+| E2E tests       | `npx playwright test`     |

@@ -9,6 +9,7 @@ import type {
   TimelineItem,
   HotelRecommendation,
   FlightOption,
+  NearbySuggestion,
   Language,
   TravelMode,
 } from '../types';
@@ -76,3 +77,13 @@ export const fetchFlightOptions = (
   returnDate?: string
 ): Promise<FlightOption[]> =>
   callAI('flights', { origin, destination, departureDate, lang, returnDate });
+
+export const fetchNearbySuggestions = (
+  city: string,
+  country: string,
+  weather: { temp: number; conditions: string; precipprob: number } | null,
+  currentTime: string,
+  dayOfWeek: string,
+  lang: Language
+): Promise<NearbySuggestion[]> =>
+  callAI('nearby', { city, country, weather, currentTime, dayOfWeek, lang });

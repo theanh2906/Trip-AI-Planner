@@ -37,34 +37,17 @@ export function getCurrentPosition(): Promise<GeolocationCoordinates> {
     navigator.geolocation.getCurrentPosition(
       (position) => resolve(position.coords),
       (error) => {
-        let errorResult: GeolocationError;
-        const { PERMISSION_DENIED, POSITION_UNAVAILABLE, TIMEOUT } = error;
-        
-        switch (error.code) {
-          case PERMISSION_DENIED:
-            errorResult = {
-              code: 'PERMISSION_DENIED',
-              message: 'User denied geolocation permission',
-            };
-            break;
-          case POSITION_UNAVAILABLE:
-            errorResult = {
-              code: 'POSITION_UNAVAILABLE',
-              message: 'Location information unavailable',
-            };
-            break;
-          case TIMEOUT:
-            errorResult = { code: 'TIMEOUT', message: 'Location request timed out' };
-            break;
-          default:
-            errorResult = { code: 'POSITION_UNAVAILABLE', message: 'Unknown error occurred' };
-        }
-        reject(errorResult);
+        const codeMap: Record<number, GeolocationError> = {
+          1: { code: 'PERMISSION_DENIED', message: 'User denied geolocation permission' },
+          2: { code: 'POSITION_UNAVAILABLE', message: 'Location information unavailable' },
+          3: { code: 'TIMEOUT', message: 'Location request timed out' },
+        };
+        reject(codeMap[error.code] ?? { code: 'POSITION_UNAVAILABLE', message: 'Unknown error occurred' });
       },
       {
-        enableHighAccuracy: false, // Set to false to avoid long GPS locks on desktops
-        timeout: 15000,           // Increased to 15 seconds
-        maximumAge: 300000,        // Cache position for 5 minutes
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 300000,
       }
     );
   });
@@ -126,10 +109,87 @@ export async function reverseGeocode(lat: number, lng: number): Promise<GeoLocat
 }
 
 /**
- * Get current location with reverse geocoding
+ * Fallback: Get approximate location via IP geolocation.
+ * Calls IP services directly from the client so they see the user's real IP,
+ * not the server's IP (which may geolocate to a different city).
+ * Falls back to the server-side proxy as a last resort.
+ */
+export async function getLocationByIP(): Promise<GeoLocationResult> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const opts = { signal: controller.signal, headers: { 'User-Agent': 'TripAI-Planner' } };
+
+  try {
+    // Try client-side first — IP services see the user's real public IP
+    try {
+      const res = await fetch('https://ipwho.is/', opts);
+      if (res.ok) {
+        const d = await res.json();
+        if (d.success) {
+          return {
+            lat: d.latitude, lng: d.longitude,
+            displayName: d.city || 'Unknown Location',
+            city: d.city || d.region, country: d.country, countryCode: d.country_code,
+          };
+        }
+      }
+    } catch { /* try next */ }
+
+    try {
+      const res = await fetch(
+        'https://api.ipbase.com/v1/json/',
+        opts,
+      );
+      if (res.ok) {
+        const d = await res.json();
+        if (d.latitude && d.longitude) {
+          return {
+            lat: d.latitude, lng: d.longitude,
+            displayName: d.city || 'Unknown Location',
+            city: d.city, country: d.country_name, countryCode: d.country_code,
+          };
+        }
+      }
+    } catch { /* try next */ }
+
+    // Last resort: server-side proxy (uses server IP, less accurate)
+    const res = await fetch('/api/geo', opts);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `IP geolocation failed: ${res.status}`);
+    }
+    const data = await res.json();
+    return {
+      lat: data.lat, lng: data.lng,
+      displayName: data.city || 'Unknown Location',
+      city: data.city, country: data.country, countryCode: data.countryCode,
+    };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Get current location with reverse geocoding.
+ * Strategy: browser geolocation (GPS/WiFi, most accurate) → client-side IP geo → server-side IP geo.
  */
 export async function getCurrentLocation(): Promise<GeoLocationResult> {
-  const coords = await getCurrentPosition();
-  const result = await reverseGeocode(coords.latitude, coords.longitude);
-  return result;
+  // Attempt 1: Browser Geolocation API (most accurate)
+  try {
+    const coords = await getCurrentPosition();
+    return await reverseGeocode(coords.latitude, coords.longitude);
+  } catch (browserError) {
+    console.warn('Browser geolocation failed, trying IP geolocation:', browserError);
+  }
+
+  // Attempt 2: IP-based geolocation (client-side first, then server proxy)
+  try {
+    return await getLocationByIP();
+  } catch (ipError) {
+    console.error('IP geolocation also failed:', ipError);
+    throw {
+      code: 'POSITION_UNAVAILABLE',
+      message: 'All geolocation methods failed',
+    } as GeolocationError;
+  }
 }

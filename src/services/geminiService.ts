@@ -12,12 +12,14 @@ import {
   TravelMode,
   HotelRecommendation,
   FlightOption,
+  NearbySuggestion,
 } from '../types';
 import {
   buildRouteOptionsPrompt,
   buildItineraryPrompt,
   buildHotelPrompt,
   buildFlightPrompt,
+  buildNearbySuggestionsPrompt,
   getFallbackRouteMessage,
   detectRegion,
   requiresFlying,
@@ -386,4 +388,84 @@ export const fetchFlightOptions = async (
     console.error('Error fetching flights:', error);
     return [];
   }
+};
+
+// ============================================================================
+// NEARBY SUGGESTIONS
+// ============================================================================
+
+const nearbySuggestionSchema = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      id: { type: Type.STRING },
+      title: { type: Type.STRING, description: 'Name of the place/activity' },
+      description: { type: Type.STRING, description: 'Why visit now, what to expect' },
+      category: {
+        type: Type.STRING,
+        enum: ['food', 'culture', 'outdoor', 'shopping', 'entertainment', 'cafe', 'wellness'],
+      },
+      locationName: { type: Type.STRING, description: 'Area/district name' },
+      coordinates: {
+        type: Type.OBJECT,
+        properties: {
+          lat: { type: Type.NUMBER },
+          lng: { type: Type.NUMBER },
+        },
+        required: ['lat', 'lng'],
+      },
+      openHours: { type: Type.STRING, description: 'Estimated hours e.g. "08:00 - 22:00"' },
+      isOpenNow: { type: Type.BOOLEAN },
+      weatherSuitability: { type: Type.STRING, enum: ['ideal', 'ok', 'poor'] },
+      estimatedDuration: { type: Type.STRING, description: 'e.g. "1-2 hours"' },
+      costPerAdult: { type: Type.NUMBER, description: 'VN\u0110, 0 = free' },
+      costPerChild: { type: Type.NUMBER, description: 'VN\u0110, 0 = free' },
+      rating: { type: Type.STRING, description: 'e.g. "4.5/5"' },
+      tips: { type: Type.ARRAY, items: { type: Type.STRING } },
+    },
+    required: [
+      'id',
+      'title',
+      'description',
+      'category',
+      'locationName',
+      'coordinates',
+      'isOpenNow',
+      'weatherSuitability',
+      'estimatedDuration',
+      'costPerAdult',
+      'costPerChild',
+    ],
+  },
+};
+
+export const fetchNearbySuggestions = async (
+  city: string,
+  country: string,
+  weather: { temp: number; conditions: string; precipprob: number } | null,
+  currentTime: string,
+  dayOfWeek: string,
+  lang: Language
+): Promise<NearbySuggestion[]> => {
+  const prompt = buildNearbySuggestionsPrompt(city, country, weather, currentTime, dayOfWeek, lang);
+
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: prompt,
+    config: {
+      responseMimeType: 'application/json',
+      responseSchema: nearbySuggestionSchema,
+    },
+  });
+
+  if (!response.text) {
+    throw new Error('Empty response from AI');
+  }
+
+  const suggestions = JSON.parse(response.text) as NearbySuggestion[];
+  return suggestions.map((s) => ({
+    ...s,
+    imageUrl: getLocationImage(s.title, s.locationName, country),
+  }));
 };

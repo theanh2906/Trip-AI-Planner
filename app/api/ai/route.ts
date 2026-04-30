@@ -4,6 +4,7 @@ import {
   fetchItinerary,
   fetchHotelRecommendations,
   fetchFlightOptions,
+  fetchNearbySuggestions,
 } from '@/services/geminiService';
 import type { Language, TravelMode, HotelBudget } from '@/types';
 
@@ -104,6 +105,20 @@ export async function POST(request: NextRequest) {
           returnDate?: string;
         };
         const result = await fetchFlightOptions(origin, destination, departureDate, lang, returnDate);
+        response = NextResponse.json(result);
+        break;
+      }
+
+      case 'nearby': {
+        const { city, country, weather, currentTime, dayOfWeek, lang } = payload as {
+          city: string;
+          country: string;
+          weather: { temp: number; conditions: string; precipprob: number } | null;
+          currentTime: string;
+          dayOfWeek: string;
+          lang: Language;
+        };
+        const result = await fetchNearbySuggestions(city, country, weather, currentTime, dayOfWeek, lang);
         response = NextResponse.json(result);
         break;
       }

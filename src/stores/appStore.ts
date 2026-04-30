@@ -6,6 +6,7 @@ export type FeatureType =
   | 'trip-planner'
   | 'budget'
   | 'weather'
+  | 'explore-nearby'
   | 'ai-assistant'
   | 'saved-trips'
   | 'settings';
