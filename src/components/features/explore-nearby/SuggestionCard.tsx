@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import {
   Utensils,
   Landmark,
@@ -51,10 +51,36 @@ interface SuggestionCardProps {
   onClick: () => void;
 }
 
+const MOVE_THRESHOLD = 10;
+
 const SuggestionCard: React.FC<SuggestionCardProps> = ({ suggestion, isSelected, onClick }) => {
   const { language, currency } = useAppStore();
   const { location } = useExploreStore();
   const t = translations[language];
+
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const didDrag = useRef(false);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+    didDrag.current = false;
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartPos.current) return;
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - touchStartPos.current.x);
+    const dy = Math.abs(touch.clientY - touchStartPos.current.y);
+    if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
+      didDrag.current = true;
+    }
+  }, []);
+
+  const handleClick = useCallback(() => {
+    if (didDrag.current) return;
+    onClick();
+  }, [onClick]);
 
   const catConfig = categoryConfig[suggestion.category];
   const CatIcon = catConfig.icon;
@@ -91,9 +117,11 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({ suggestion, isSelected,
 
   return (
     <div
-      onClick={onClick}
+      onClick={handleClick}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
       className={cn(
-        'bg-white rounded-xl border cursor-pointer transition-all hover:shadow-md active:scale-[0.98]',
+        'bg-white rounded-xl border cursor-pointer transition-all hover:shadow-md',
         isSelected ? 'border-blue-500 shadow-md ring-1 ring-blue-500/20' : 'border-slate-200'
       )}
     >
