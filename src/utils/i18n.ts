@@ -150,6 +150,7 @@ export const translations = {
     profileStatus: 'Trạng thái email',
     verified: 'Đã xác thực',
     unverified: 'Chưa xác thực',
+    logout: 'Đăng xuất',
   },
   en: {
     appTitle: 'TripAI',
@@ -300,5 +301,6 @@ export const translations = {
     profileStatus: 'Email Status',
     verified: 'Verified',
     unverified: 'Unverified',
+    logout: 'Logout',
   },
 };
