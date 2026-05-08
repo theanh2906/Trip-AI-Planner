@@ -9,7 +9,11 @@ import {
   Loader2,
   AlertCircle,
   Search,
+  X,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { translations } from '@/utils/i18n';
 import { useAppStore } from '@/stores/appStore';
@@ -65,7 +69,7 @@ const categoryToStopType = (cat: NearbyCategory): StopType => {
 };
 
 const ExploreNearby: React.FC = () => {
-  const { language } = useAppStore();
+  const { language, setActiveFeature } = useAppStore();
   const t = translations[language];
   const isMobile = useIsMobile();
   const {
@@ -85,6 +89,7 @@ const ExploreNearby: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [manualCity, setManualCity] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     if (!hasFetched && !isLoadingLocation && !isLoadingSuggestions) {
@@ -226,6 +231,14 @@ const ExploreNearby: React.FC = () => {
               <RefreshCw className={cn('w-4 h-4', isLoading && 'animate-spin')} />
             </button>
           )}
+          {!isMobile && (
+            <button
+              onClick={() => setActiveFeature('trip-planner')}
+              className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Location */}
@@ -277,7 +290,6 @@ const ExploreNearby: React.FC = () => {
               />
             ))}
 
-            {/* Disclaimer */}
             <p className="text-[10px] text-slate-400 text-center py-2">
               {t.exploreDisclaimer}
             </p>
@@ -299,27 +311,47 @@ const ExploreNearby: React.FC = () => {
 
   return (
     <>
-      {/* Map background */}
-      <div className="absolute inset-0 z-0">
+      <div 
+        className="absolute inset-0 z-0"
+        onClick={() => isMobile && !isCollapsed && setIsCollapsed(true)}
+      >
         <Map items={mapItems} navigationPath={null} />
       </div>
 
-      {/* Desktop: side panel */}
       {!isMobile && (
         <div className="absolute left-0 top-0 bottom-0 w-96 bg-white/95 backdrop-blur-xl shadow-2xl z-20 flex flex-col">
           {renderPanel()}
         </div>
       )}
 
-      {/* Mobile: bottom panel */}
       {isMobile && (
-        <div className="absolute bottom-16 left-0 right-0 h-[60vh] bg-white/95 backdrop-blur-xl rounded-t-2xl shadow-2xl z-20 flex flex-col">
-          {/* Drag handle */}
-          <div className="flex-none flex justify-center py-2">
-            <div className="w-10 h-1 bg-slate-300 rounded-full" />
+        <motion.div 
+          initial={false}
+          animate={{ 
+            height: isCollapsed ? '44px' : '60vh',
+          }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          className="absolute bottom-16 left-0 right-0 bg-white/95 backdrop-blur-xl rounded-t-2xl shadow-2xl z-20 flex flex-col overflow-hidden"
+        >
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="flex-none flex flex-col items-center justify-center py-2 hover:bg-slate-50 transition-colors w-full"
+          >
+            <div className="w-10 h-1 bg-slate-300 rounded-full mb-1" />
+            {isCollapsed ? (
+              <ChevronUp className="w-4 h-4 text-slate-400" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-slate-400" />
+            )}
+          </button>
+          
+          <div className={cn(
+            "flex-1 flex flex-col min-h-0 transition-opacity duration-200",
+            isCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+          )}>
+            {renderPanel()}
           </div>
-          {renderPanel()}
-        </div>
+        </motion.div>
       )}
     </>
   );

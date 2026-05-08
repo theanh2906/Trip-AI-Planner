@@ -15,7 +15,7 @@ const navItems: NavItem[] = [
   { id: 'trip-planner', labelKey: 'navTripPlanner', icon: Map },
   { id: 'explore-nearby', labelKey: 'navExploreNearby', icon: Compass },
   { id: 'weather', labelKey: 'navWeather', icon: CloudSun },
-  { id: 'budget', labelKey: 'navBudget', icon: Wallet, disabled: true },
+  // { id: 'budget', labelKey: 'navBudget', icon: Wallet, disabled: true },
   { id: 'more', labelKey: 'navMore', icon: MoreHorizontal },
 ];
 

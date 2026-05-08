@@ -35,6 +35,7 @@ const navItems: NavItem[] = [
   { id: 'weather', labelKey: 'navWeather', icon: CloudSun },
   { id: 'ai-assistant', labelKey: 'navAiAssistant', icon: Sparkles, disabled: true },
   { id: 'saved-trips', labelKey: 'navSavedTrips', icon: Bookmark, disabled: true },
+  { id: 'account', labelKey: 'navAccount', icon: UserIcon },
 ];
 
 const Sidebar: React.FC = () => {
@@ -85,7 +86,13 @@ const Sidebar: React.FC = () => {
             className="fixed top-0 left-0 bottom-0 z-50 w-[280px] bg-white shadow-2xl flex flex-col"
           >
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
-              <div className="flex items-center gap-3">
+              <div 
+                onClick={() => {
+                  setActiveFeature('trip-planner');
+                  setSidebarOpen(false);
+                }}
+                className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity active:scale-95"
+              >
                 <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/30">
                   <Navigation2 className="w-5 h-5 text-white" />
                 </div>
@@ -138,7 +145,13 @@ const Sidebar: React.FC = () => {
               <div className="px-2 pb-2">
                 {user ? (
                   <div className="space-y-1">
-                    <div className="flex items-center gap-3 px-4 py-3 text-slate-600">
+                    <div 
+                      onClick={() => {
+                        setActiveFeature('account');
+                        setSidebarOpen(false);
+                      }}
+                      className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 cursor-pointer rounded-xl transition-colors"
+                    >
                       <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center border border-blue-200 overflow-hidden">
                         {user.photoURL ? (
                           <img src={user.photoURL} alt={user.displayName || ''} className="w-full h-full object-cover" />

@@ -6,7 +6,7 @@ import { cn } from '../../lib/utils';
 import { useAuthStore } from '../../stores/authStore';
 
 const Header: React.FC = () => {
-  const { language, toggleSidebar } = useAppStore();
+  const { language, toggleSidebar, setActiveFeature } = useAppStore();
   const { user, setIsAuthForced } = useAuthStore();
   const t = translations[language];
 
@@ -31,7 +31,10 @@ const Header: React.FC = () => {
         >
           <Menu className="w-5 h-5 text-slate-700" />
         </button>
-        <div className="flex items-center gap-2 md:hidden">
+        <div 
+          onClick={() => setActiveFeature('trip-planner')}
+          className="flex items-center gap-2 md:hidden cursor-pointer active:scale-95 transition-transform"
+        >
           <div className="p-1.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-lg shadow-blue-500/30">
             <Navigation2 className="w-4 h-4 text-white" />
           </div>
@@ -42,7 +45,7 @@ const Header: React.FC = () => {
       <div className="flex items-center gap-2">
         {user ? (
           <button
-            onClick={toggleSidebar}
+            onClick={() => setActiveFeature('account')}
             className="flex items-center gap-2 p-1 pr-3 bg-white/90 rounded-full border border-slate-200 shadow-sm hover:bg-white transition-all active:scale-95"
           >
             <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden border border-blue-200">

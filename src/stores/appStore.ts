@@ -9,7 +9,8 @@ export type FeatureType =
   | 'explore-nearby'
   | 'ai-assistant'
   | 'saved-trips'
-  | 'settings';
+  | 'settings'
+  | 'account';
 
 interface AppState {
   activeFeature: FeatureType;

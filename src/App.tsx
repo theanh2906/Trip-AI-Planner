@@ -9,6 +9,9 @@ import { ExploreNearby } from './components/features/explore-nearby';
 import { translations } from './utils/i18n';
 import { useAppStore } from './stores/appStore';
 import { useTripStore } from './stores/tripStore';
+import AuthPage from './components/features/auth/AuthPage';
+import { useAuthStore } from './stores/authStore';
+import UserAccount from './components/features/account/UserAccount';
 
 // Leaflet requires browser APIs — must be loaded client-side only
 const Map = dynamic(() => import('./components/Map'), { ssr: false });
@@ -66,9 +69,6 @@ const TripPlannerFeature: React.FC = () => {
   );
 };
 
-import AuthPage from './components/features/auth/AuthPage';
-import { useAuthStore } from './stores/authStore';
-
 const App: React.FC = () => {
   const { activeFeature, setOnline } = useAppStore();
   const { user, guestPromptCount, isInitializing, isAuthForced } = useAuthStore();
@@ -109,6 +109,8 @@ const App: React.FC = () => {
         return <WeatherDashboard />;
       case 'explore-nearby':
         return <ExploreNearby />;
+      case 'account':
+        return <UserAccount />;
       case 'ai-assistant':
         return <ComingSoon feature="AI Assistant" />;
       case 'saved-trips':

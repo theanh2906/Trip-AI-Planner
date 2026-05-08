@@ -13,7 +13,7 @@ const WeatherDashboard: React.FC = () => {
   const t = translations[language];
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-20 pb-24 md:pb-10 px-4 md:px-8 overflow-y-auto">
+    <div className="min-h-full bg-slate-50 pt-20 pb-24 md:pb-10 px-4 md:px-8">
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg shadow-blue-500/30 mb-6">
